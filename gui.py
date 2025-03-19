@@ -69,7 +69,7 @@ class MDIFrame(wx.MDIParentFrame):
         sobre_child_frame.Show()
 
 
-# Cria aplicação Wx
+# Cria aplicacao Wx
 app = wx.App(False)
 
 # Cria formulario
