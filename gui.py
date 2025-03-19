@@ -38,7 +38,7 @@ class MDIFrame(wx.MDIParentFrame):
 
         # Cria Barra de menus no topo da janela
         menubarra = wx.MenuBar()
-        menubarra.Append(menu, "&Arquivo")
+        menubarra.Append(menu, "&Arquivo") #teste
         menubarra.Append(menu_sobre, "&Sobre")
         menubarra.Append(menu_sair, "&Sair")
         self.SetMenuBar(menubarra)
