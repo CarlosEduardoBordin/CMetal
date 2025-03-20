@@ -4,8 +4,7 @@ import wx.aui
 # importa modulos
 from configuracoes.configuracoes_child_frame import ConfiguracoesChildFrame
 from sobre.sobre_child_frame import SobreChildFrame
-#importa o script armadura longitudinal
-
+from metalica.steel_child_frame import SteelChildFrame
 # Declara Classe
 class MDIFrame(wx.MDIParentFrame):
 
@@ -18,7 +17,7 @@ class MDIFrame(wx.MDIParentFrame):
         # Criar um item
         menu = wx.Menu()
         # Criar um item de menu
-        menu_novo_perfil = wx.MenuItem(menu, 5000, "&Novo perfil\tCtrl+N")
+        menu_novo_perfil = wx.MenuItem(menu, 5000, "&Novo perfil")
         # Adicionar um ícone ao item de menu
         menu_novo_perfil.SetBitmap(wx.Icon('icones/viga_iso.png', wx.BITMAP_TYPE_PNG))
         menu_abrir_configuracoes = wx.MenuItem(menu, 5003, "&Configurações")
@@ -51,7 +50,15 @@ class MDIFrame(wx.MDIParentFrame):
         self.Bind(wx.EVT_CLOSE, self.sair)
 
     def perfil(self, evt):
-        pass
+        #wxpython classe comum para entrada de texto de linha unica - TextEntryDialog
+        mensagem_dialogo = wx.TextEntryDialog(self,"De nome ao perfil:", caption = "Perfil", value = "Ex : Perfil 1", style=wx.TextEntryDialogStyle)
+        if mensagem_dialogo.ShowModal() == wx.ID_OK:
+            name_id_formulario_filho = mensagem_dialogo.GetValue()
+            #abre o formulario filho
+            steel_child_frame = SteelChildFrame(self, name_id_formulario_filho)
+            steel_child_frame.Show()
+
+
     #verificar esse menu
     def configuracoes(self,evt):
         configuracoes_mdi = ConfiguracoesChildFrame(self)
