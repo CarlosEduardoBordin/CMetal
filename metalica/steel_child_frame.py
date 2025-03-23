@@ -3,29 +3,7 @@ import wx.adv
 import pandas as pd
 from metalica.edit_child_frame import EditChildFrame
 from metalica.widget_class import StaticBox
-
-#"tipo_aco.xlsx"
-class ReadExcelFile:
-    def __init__(self, path):
-        self.path = path
-        #verifica a se tem o arquivo !!
-        try:
-            self.data = pd.read_excel(path)
-        except Exception as exception_code:
-            wx.MessageBox(f"Erro: {exception_code}", "Erro",style = wx.OK | wx.ICON_ERROR)
-
-    def return_value_by_one_col(self, col_name):
-        return_list = self.data[col_name].tolist()
-        return return_list
-    def get_name_and_return_col_value(self, col_name, col_line_value, extrac_col):
-        firth_line = self.data[self.data[col_name] == col_line_value].iloc[0]  # Filtra e pega a primeira linha
-        result_extracted_values = {}
-        #valor da coluna na coluna extraida
-        for col in extrac_col:
-            #separa o valor para cada coluna usando a linha
-            result_extracted_values[col] = firth_line[col] #valores em np.int64
-        return result_extracted_values
-
+from metalica.table_manipulation import ReadExcelFile
 
 #criando o frame filho
 class SteelChildFrame(wx.MDIChildFrame):
