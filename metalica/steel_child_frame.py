@@ -1,9 +1,12 @@
+import os.path
 import wx
 import wx.adv
-import pandas as pd
 from metalica.edit_child_frame import EditChildFrame
 from metalica.widget_class import StaticBox
 from metalica.table_manipulation import ReadExcelFile
+from metalica.matplot_img_draw import DrawBeam
+from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
+
 from typing import Dict, Any # para mudar os valores da selecao
 
 #() tupla [] lista {} dicionario
@@ -46,9 +49,12 @@ class SteelChildFrame(wx.MDIChildFrame):
                     if label.GetLabel() != novo_texto:
                         label.SetLabel(novo_texto)
                 self.Layout()
-
-
-            print(return_values_dimension)
+            self.box_desenho.draw_w_hp(return_values_dimension["d (mm) : "], return_values_dimension["bf (mm) : "], return_values_dimension["tw (mm) : "])
+            self.canvas.draw()
+            #fazer as variacoes para os tipos de perfis 
+            # path = os.path.join(os.getcwd(), "icones", "whp.bmp")
+            # self.img_crtl_perfil.SetBitmap(wx.Bitmap(path))
+            # self.img_crtl_perfil.GetParent().Layout() #atualiza a imagem
 
         #------------------------------------------------
         self.window_main_panel = wx.Panel(self) #cria o painel para por os objetos
@@ -90,8 +96,11 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.select_steel_perfil.SetMaxSize(wx.Size(-1, 20))
         self.select_steel_perfil.Bind(wx.EVT_COMBOBOX, on_select_perfil)
         self.box_perfil_selection.widgets_add(self.select_steel_perfil, 0, "False")
-        self.box_perfil_selection.widgets_add(wx.StaticLine(self.box_perfil_selection, style=wx.LI_HORIZONTAL), 0,False)
-
+        self.box_perfil_selection.widgets_add(wx.StaticLine(self.box_perfil_selection, style=wx.LI_HORIZONTAL), 0,False) #linha horizontal separar caixa de selecao e imagem
+        #------------------------------------------------- imagem do perfil
+        self.box_desenho = DrawBeam()
+        self.canvas = FigureCanvas(self.box_perfil_selection, -1, self.box_desenho.fig)
+        self.box_perfil_selection.widgets_add(self.canvas, 0, False)
         #coluna 1
         self.linear_mass_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="Massa Linear (kg/m) : ")
         self.box_perfil_data.widgets_add(self.linear_mass_text, 0, False)

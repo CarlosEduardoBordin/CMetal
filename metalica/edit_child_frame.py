@@ -26,8 +26,8 @@ class EditChildFrame(wx.MDIChildFrame):
                 for cls in range(num_cols):
                     line_data.append(self.grid.GetCellValue(ln, cls))  # Capturar valor da célula
                 data.append(line_data)
-            file_save_name = WriteExcelFile("teste.xlsx")
-            file_save_name.save_data_to_file(data, num_cols, ["Tipo", "fy","fu"])
+            file_save_name = WriteExcelFile("steel.xlsx")
+            file_save_name.save_data_to_file("tipo_de_aco", data, num_cols, ["Tipo", "fy","fu"])
 
         #----------------------------------------------------- sizer principal
         self.window_main_panel = wx.Panel(self) #cria o painel para por os objetos

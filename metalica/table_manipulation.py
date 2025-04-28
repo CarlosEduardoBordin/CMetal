@@ -1,6 +1,7 @@
 #from encodings.punycode import selective_find
 import wx
 import pandas as pd
+import os
 from itertools import product # para 2 for dentro de 1 linha
 
 from pandas.core.interchange.dataframe_protocol import DataFrame
@@ -41,6 +42,8 @@ class ReadExcelFile:
 class WriteExcelFile:
     def __init__(self, path):
         self.path = path
-    def save_data_to_file(self, data, num_cols,header_list):
-        dataframe = pd.DataFrame(data, columns=header_list[:num_cols])
-        dataframe.to_excel(self.path, index=True, header=True)
+    def save_data_to_file(self, sht_name, data, num_cols,header_list):
+        dataframe = pd.DataFrame(data, columns=header_list[:num_cols]) #salva o valor da celula partindo do valor da coluna
+        mode = 'a' if os.path.exists(self.path) else 'w'
+        with pd.ExcelWriter(self.path, engine='openpyxl', mode=mode, if_sheet_exists='replace') as writer:
+            dataframe.to_excel(writer, sheet_name=sht_name, index=True, header=True)
