@@ -10,7 +10,7 @@ from metalica.table_manipulation import WriteExcelFile
 class EditChildFrame(wx.MDIChildFrame):
     def __init__(self, parent, frame_name):
         super().__init__(parent, id=wx.ID_ANY, title = frame_name,
-                         pos=wx.DefaultPosition, size = (400,800), style = wx.DEFAULT_FRAME_STYLE)
+                         pos=wx.DefaultPosition, size = (400,650), style = wx.DEFAULT_FRAME_STYLE)
         def add_line(event):
             self.grid.AppendRows(1)
         def rmv_line(event):
@@ -45,7 +45,7 @@ class EditChildFrame(wx.MDIChildFrame):
         self.edit_box.widgets_add(self.table_box, 0,True)
         self.table_box_value_cel = StaticBox(self.table_box,"Valores", orientation = "vertical")
         self.table_box.widgets_add(self.table_box_value_cel, 0, False)
-        self.table_box_value_cel.SetMaxSize((wx.DefaultCoord,300))
+        self.table_box_value_cel.SetMaxSize((wx.DefaultCoord,200))
         #------------------------------------------------------ table box
         self.grid = wx.grid.Grid(self.table_box_value_cel)
         self.table_box_value_cel.widgets_add(self.grid, 0,True)
@@ -72,7 +72,6 @@ class EditChildFrame(wx.MDIChildFrame):
         self.btn_save= wx.Button(self.table_box_file, label="Salvar")
         self.table_box_file.widgets_add(self.btn_save, 0,True)
         self.btn_save.Bind(wx.EVT_BUTTON, save_table)
-
 
 
         self.main_sizer.Add(self.edit_box,proportion =  0, flag = wx.ALL | wx.EXPAND, border = 5) #adiciona o primeiro staticbox ao sizer principal da janela

@@ -5,6 +5,7 @@ from metalica.edit_child_frame import EditChildFrame
 from metalica.widget_class import StaticBox
 from metalica.table_manipulation import ReadExcelFile
 from metalica.matplot_img_draw import DrawBeam
+from metalica.help_steel_child_frame import ImgHelpButton
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 
 from typing import Dict, Any # para mudar os valores da selecao
@@ -15,7 +16,7 @@ class SteelChildFrame(wx.MDIChildFrame):
     def __init__(self, parent, frame_name):
         #parametros iniciais da janela
         super().__init__(parent, id=wx.ID_ANY, title = frame_name,
-                         pos=(0,0), size = (800,600), style = wx.DEFAULT_FRAME_STYLE)
+                         pos=(0,0), size = (800,700), style = wx.DEFAULT_FRAME_STYLE)
         self.parent = parent #atributo parente da janela
         #------------------------------------------------funcoes dos botoes
         self.data_steel_type = ReadExcelFile("steel.xlsx","tipo_de_aco")
@@ -55,7 +56,9 @@ class SteelChildFrame(wx.MDIChildFrame):
             # path = os.path.join(os.getcwd(), "icones", "whp.bmp")
             # self.img_crtl_perfil.SetBitmap(wx.Bitmap(path))
             # self.img_crtl_perfil.GetParent().Layout() #atualiza a imagem
-
+        def on_help_button_img(event):
+            help_frame = ImgHelpButton(self.parent,"Ajuda")
+            help_frame.Show()
         #------------------------------------------------
         self.window_main_panel = wx.Panel(self) #cria o painel para por os objetos
         self.main_sizer = wx.BoxSizer(wx.VERTICAL) #define a organizacao das formas no sizer principal
@@ -101,8 +104,12 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.box_desenho = DrawBeam()
         self.canvas = FigureCanvas(self.box_perfil_selection, -1, self.box_desenho.fig)
         self.box_perfil_selection.widgets_add(self.canvas, 0, False)
+        #btn ajuda
+        self.button_help = wx.Button(self.box_perfil_selection, label = "Ajuda")
+        self.box_perfil_selection.widgets_add(self.button_help, 0, True)
+        self.button_help.Bind(wx.EVT_BUTTON, on_help_button_img)
         #coluna 1
-        self.linear_mass_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="Massa Linear (kg/m) : ")
+        self.linear_mass_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="Massa Linear (kg/m) :       ")
         self.box_perfil_data.widgets_add(self.linear_mass_text, 0, False)
         self.d_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="d (mm) : ")
         self.box_perfil_data.widgets_add(self.d_text, 0, False)
@@ -146,15 +153,52 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.box_perfil_data.widgets_add(self.cw_text , 0, False)
         self.u_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="u (m²/m) : ")
         self.box_perfil_data.widgets_add(self.u_text , 0, False)
-        # #coluna 2
-        # self.linear_mass_text_result = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="linear_mass_text_result")
-        # self.box_perfil_data.widgets_add(self.linear_mass_text_result, 1, False)
-        # self.d_text_result = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="gfhfghfghfghfgh")
-        # self.box_perfil_data.widgets_add(self.d_text_result, 1, False)
-        # # self.box_perfil_data.add_to_grid(self.linear_mass_text, col=0)
-        # # self.box_perfil_data.add_to_grid(self.linear_mass_text2, col=1)
+        #------------------------------------------------- box valores
+        self.box_values_input = StaticBox(self.window_main_panel,"Verificação", orientation = "horizontal")
+        #comprimentos de flambagem
+        self.box_lengths = StaticBox(self.box_values_input, "Comprimentos do elemento", orientation= "grid")
+        self.box_values_input.widgets_add(self.box_lengths,0, False)
+        self.text_lfx = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Lfx (m) :")
+        self.box_lengths.widgets_add(self.text_lfx, 0, False)
+        self.input_lfx = wx.TextCtrl(self.box_lengths, id = wx.ID_ANY, value = "")
+        self.box_lengths.widgets_add(self.input_lfx, 1,False)
+        self.text_lfy = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Lfy (m) :")
+        self.box_lengths.widgets_add(self.text_lfy, 0, False)
+        self.input_lfy = wx.TextCtrl(self.box_lengths, id = wx.ID_ANY, value = "")
+        self.box_lengths.widgets_add(self.input_lfy, 1,False)
+        self.text_lb = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Lb (m) :")
+        self.box_lengths.widgets_add(self.text_lb, 0, False)
+        self.input_lb = wx.TextCtrl(self.box_lengths, id = wx.ID_ANY, value = "")
+        self.box_lengths.widgets_add(self.input_lb, 1,False)
+        #valores dos esforcos
+        self.box_load_solicitation = StaticBox(self.box_values_input, "Solicitações", orientation= "grid")
+        self.box_values_input.widgets_add(self.box_load_solicitation, 0, False)
+        self.text_fn = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Normal (KN) :")
+        self.box_load_solicitation.widgets_add(self.text_fn, 0, False)
+        self.input_fn = wx.TextCtrl(self.box_load_solicitation, id=wx.ID_ANY, value="")
+        self.box_load_solicitation.widgets_add(self.input_fn, 1, False)
+        self.text_fc = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Cortante (KN) :")
+        self.box_load_solicitation.widgets_add(self.text_fc, 0, False)
+        self.input_fc = wx.TextCtrl(self.box_load_solicitation, id=wx.ID_ANY, value="")
+        self.box_load_solicitation.widgets_add(self.input_fc, 1, False)
+        self.text_mx = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Momento X (Kn*m) :")
+        self.box_load_solicitation.widgets_add(self.text_mx, 0, False)
+        self.input_mx = wx.TextCtrl(self.box_load_solicitation, id=wx.ID_ANY, value="")
+        self.box_load_solicitation.widgets_add(self.input_mx, 1, False)
+        self.text_my = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Momento Y (Kn*m) :")
+        self.box_load_solicitation.widgets_add(self.text_my, 0, False)
+        self.input_my = wx.TextCtrl(self.box_load_solicitation, id=wx.ID_ANY, value="")
+        self.box_load_solicitation.widgets_add(self.input_my, 1, False)
+
+
+
+        self.box_results = StaticBox(self.box_values_input, "Resultados", orientation= "vertical")
+        self.box_values_input.widgets_add(self.box_results, 0, True)
+
+
 
 
         self.main_sizer.Add(self.box_steel_type,proportion =  0, flag = wx.ALL | wx.EXPAND, border = 5) #adiciona o primeiro staticbox ao sizer principal da janela
-        self.main_sizer.Add(self.box_perfil, proportion = 0, flag = wx.ALL | wx.EXPAND, border = 5)
+        self.main_sizer.Add(self.box_perfil, proportion = 0, flag = wx.ALL | wx.EXPAND, border = 5) # adiciona o escolha do perfil
+        self.main_sizer.Add(self.box_values_input, proportion = 0, flag = wx.ALL | wx.EXPAND, border = 5) #adiciona o insercao de valores
         self.window_main_panel.SetSizer(self.main_sizer)
