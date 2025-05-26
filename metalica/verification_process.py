@@ -102,9 +102,18 @@ class VerificationProcess:
                     sigma_e_l = ((1.49*((0.56*np.sqrt(self.e/self.fy))/(self.bf_text / 2 * self.tf_text)))**2)*self.fy
                     b_efetivo = (self.bf_text / 2) * (1 - 0.22 * np.sqrt(sigma_e_l / (psi * self.fy))) * np.sqrt(
                         sigma_e_l / (psi * self.fy))
-                    # b = b_efetivo * 4????
+                    # b = b_efetivo * 4???? ********************************************************************************************************************************
                     area_al = b_efetivo * self.tf_text
-                    
+            area_efetiva_total = area_aa + area_al
+            nrdc = psi*area_efetiva_total*self.fy/self.y_um
+            if self.fn <= nrdc:
+                #elemento passa
+                return True
+            else:
+                #elemento nao passa
+                return False
+
+
 #tracao
         else:
             #tracao

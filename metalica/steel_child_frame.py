@@ -6,6 +6,7 @@ from metalica.widget_class import StaticBox
 from metalica.table_manipulation import ReadExcelFile
 from metalica.matplot_img_draw import DrawBeam
 from metalica.help_steel_child_frame import ImgHelpButton
+from metalica.values_config_child_frame import ValuesConfiguration
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 
 from typing import Dict, Any # para mudar os valores da selecao
@@ -59,6 +60,10 @@ class SteelChildFrame(wx.MDIChildFrame):
         def on_help_button_img(event):
             help_frame = ImgHelpButton(self.parent,"Ajuda")
             help_frame.Show()
+        def on_values_cfg(event):
+            values_cfg = ValuesConfiguration(self.parent,"Configurar as variáveis")
+            values_cfg.Show()
+
         #------------------------------------------------
         self.window_main_panel = wx.Panel(self) #cria o painel para por os objetos
         self.main_sizer = wx.BoxSizer(wx.VERTICAL) #define a organizacao das formas no sizer principal
@@ -166,10 +171,15 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.box_lengths.widgets_add(self.text_lfy, 0, False)
         self.input_lfy = wx.TextCtrl(self.box_lengths, id = wx.ID_ANY, value = "")
         self.box_lengths.widgets_add(self.input_lfy, 1,False)
-        self.text_lb = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Lb (m) :")
-        self.box_lengths.widgets_add(self.text_lb, 0, False)
-        self.input_lb = wx.TextCtrl(self.box_lengths, id = wx.ID_ANY, value = "")
-        self.box_lengths.widgets_add(self.input_lb, 1,False)
+        self.text_lz = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Lfz (m) :")
+        self.box_lengths.widgets_add(self.text_lz, 0, False)
+        self.input_lz = wx.TextCtrl(self.box_lengths, id = wx.ID_ANY, value = "")
+        self.box_lengths.widgets_add(self.input_lz, 1,False)
+        self.text_values_cfg = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Variáveis :")
+        self.box_lengths.widgets_add(self.text_values_cfg, 0, False)
+        self.button_cfg_values = wx.Button(self.box_lengths, label = "Configurar")
+        self.box_lengths.widgets_add(self.button_cfg_values, 1,  False)
+        self.button_cfg_values.Bind(wx.EVT_BUTTON, on_values_cfg)
         #valores dos esforcos
         self.box_load_solicitation = StaticBox(self.box_values_input, "Solicitações", orientation= "grid")
         self.box_values_input.widgets_add(self.box_load_solicitation, 0, False)
