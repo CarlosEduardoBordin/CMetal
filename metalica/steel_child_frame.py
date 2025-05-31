@@ -3,6 +3,7 @@ import wx
 import wx.adv
 from metalica.edit_child_frame import EditChildFrame
 from metalica.widget_class import StaticBox
+from metalica.widget_class import TextBoxVrf
 from metalica.table_manipulation import ReadExcelFile
 from metalica.matplot_img_draw import DrawBeam
 from metalica.help_steel_child_frame import ImgHelpButton
@@ -83,13 +84,13 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.btn_edit.Bind(wx.EVT_BUTTON, load_edit_child_frame)
         self.label_fy = wx.StaticText(self.box_steel_selection_select_menu,id=wx.ID_ANY, label="fy (Mpa)")
         self.box_steel_selection_select_menu.widgets_add(self.label_fy, 0, True)
-        self.text_fy = wx.TextCtrl(self.box_steel_selection_select_menu, id=wx.ID_ANY, value = "", size=(10,10))
+        self.text_fy = TextBoxVrf(self.box_steel_selection_select_menu, value = "0", only_numeric=True)
         self.box_steel_selection_select_menu.widgets_add(self.text_fy, 0, True)
         #quebra de linha vertical
         self.box_steel_selection_select_menu.widgets_add(wx.StaticLine(self.box_steel_selection_select_menu, style=wx.LI_VERTICAL), 0,False)
         self.label_fu = wx.StaticText(self.box_steel_selection_select_menu,id=wx.ID_ANY, label="fu (Mpa)")
         self.box_steel_selection_select_menu.widgets_add(self.label_fu, 0, True)
-        self.text_fu = wx.TextCtrl(self.box_steel_selection_select_menu, id=wx.ID_ANY, value = "", size = (10,10))
+        self.text_fu = TextBoxVrf(self.box_steel_selection_select_menu, value = "0", only_numeric=True)
         self.box_steel_selection_select_menu.widgets_add(self.text_fu, 0,True)
         #------------------------------------------------- selecao do perfil
         self.box_perfil = StaticBox(self.window_main_panel, "Escolha do perfil", orientation="horizontal")
@@ -185,20 +186,21 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.box_values_input.widgets_add(self.box_load_solicitation, 0, False)
         self.text_fn = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Normal (KN) :")
         self.box_load_solicitation.widgets_add(self.text_fn, 0, False)
-        self.input_fn = wx.TextCtrl(self.box_load_solicitation, id=wx.ID_ANY, value="")
+        self.input_fn = TextBoxVrf(self.box_load_solicitation, value = "0", only_numeric=True)
         self.box_load_solicitation.widgets_add(self.input_fn, 1, False)
         self.text_fc = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Cortante (KN) :")
-        self.box_load_solicitation.widgets_add(self.text_fc, 0, False)
-        self.input_fc = wx.TextCtrl(self.box_load_solicitation, id=wx.ID_ANY, value="")
+        self.box_load_solicitation.widgets_add(self.text_fc, 0,  False)
+        self.input_fc = TextBoxVrf(self.box_load_solicitation, value = "0",only_numeric=True)
         self.box_load_solicitation.widgets_add(self.input_fc, 1, False)
         self.text_mx = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Momento X (Kn*m) :")
         self.box_load_solicitation.widgets_add(self.text_mx, 0, False)
-        self.input_mx = wx.TextCtrl(self.box_load_solicitation, id=wx.ID_ANY, value="")
+        self.input_mx = TextBoxVrf(self.box_load_solicitation, value = "0",only_numeric=True)
         self.box_load_solicitation.widgets_add(self.input_mx, 1, False)
         self.text_my = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Momento Y (Kn*m) :")
         self.box_load_solicitation.widgets_add(self.text_my, 0, False)
-        self.input_my = wx.TextCtrl(self.box_load_solicitation, id=wx.ID_ANY, value="")
+        self.input_my = TextBoxVrf(self.box_load_solicitation, value = "0",only_numeric=True)
         self.box_load_solicitation.widgets_add(self.input_my, 1, False)
+
 
 
 

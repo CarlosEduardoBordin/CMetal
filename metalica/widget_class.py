@@ -32,3 +32,28 @@ class StaticBox(wx.Panel):
                     self.grid_sizer.Add((0, 0), 0)
                 self.grid_sizer.Add(widget,  0, flag =  wx.ALIGN_CENTER_VERTICAL, border=5)
             self.Layout() #atualiza
+
+class TextBoxVrf(wx.TextCtrl):
+    def __init__(self, parent, value, only_numeric=False, **kwargs):
+        super().__init__(parent, value = value, style=wx.TE_PROCESS_ENTER, **kwargs)
+        self.only_numeric = only_numeric
+
+    def get_value(self):
+        value = self.GetValue().replace(",", ".").strip()
+
+        if self.only_numeric:
+            try:
+                value = float(value)
+                self._set_background(wx.Colour(255, 255, 255))  # branco
+                return value
+            except ValueError:
+                self._set_background(wx.Colour(255, 200, 200))  # vermelho claro
+                wx.MessageBox(f"Valor inválido: {value}", "Erro", wx.OK | wx.ICON_ERROR)
+                return None
+        else:
+            self._set_background(wx.Colour(255, 255, 255))  # branco
+            return value
+
+    def _set_background(self, color):
+        self.SetBackgroundColour(color)
+        self.Refresh()

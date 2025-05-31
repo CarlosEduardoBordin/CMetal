@@ -65,7 +65,7 @@ class VerificationProcess:
                 psi = 0.658**(lbd_zero**2)
             else:
                 psi = 0.877/(lbd_zero**2)
-                
+# ************************************************************************************************************
             #verificacao da esbeltez local
             #elemento AA
             b_sobre_t_alma = self.d_l_text/self.tw_text
@@ -73,15 +73,16 @@ class VerificationProcess:
             #elemento AL
             b_sobre_t_aba = (self.bf_text/2)/self.tf_text # bf/2 pega 1 aba da mesa
             b_sobre_t_limit_aba = 0.56*np.sqrt(self.e/self.fy)
-            if b_sobre_t_alma <= b_sobre_t_limit_alma:
+            if b_sobre_t_alma <= b_sobre_t_limit_alma and b_sobre_t_aba <= b_sobre_t_limit_aba:
                 #area vai ser a bruta
-                area_aa = self.d_l_text*self.tw_text
+                area = self.area_text
                 #pass
             else:
                 print("teste 1 n passou")
                 if b_sobre_t_alma <= b_sobre_t_limit_alma/np.sqrt(psi):
                     print("teste 2 passou")
-                    area_aa = self.d_l_text * self.tw_text
+                    area = self.area_text
+                    # area_aa = self.d_l_text * self.tw_text
                     #b_efetivo = b real
                     pass
                 else:
@@ -89,21 +90,17 @@ class VerificationProcess:
                     b_efetivo = self.d_l_text*(1-0.18*np.sqrt(sigma_e_l/(psi*self.fy)))*np.sqrt(sigma_e_l/(psi*self.fy))
                     # b = b_efetivo
                     area_aa = b_efetivo * self.tw_text
-           #elemento al
-            if  b_sobre_t_aba <= b_sobre_t_limit_aba:
-                # area vai ser a bruta
-                area_al = self.bf_text/2 * self.tf_text
-            else:
-                print("teste 1 n passou")
                 if b_sobre_t_aba <= b_sobre_t_limit_aba/np.sqrt(psi):
-                    area_al = self.bf_text / 2 * self.tf_text
+                    area = self.area_text
+                    # area_al = self.bf_text / 2 * self.tf_text
                     # b_efetivo = b real
                 else:
                     sigma_e_l = ((1.49*((0.56*np.sqrt(self.e/self.fy))/(self.bf_text / 2 * self.tf_text)))**2)*self.fy
                     b_efetivo = (self.bf_text / 2) * (1 - 0.22 * np.sqrt(sigma_e_l / (psi * self.fy))) * np.sqrt(
                         sigma_e_l / (psi * self.fy))
-                    # b = b_efetivo * 4???? ********************************************************************************************************************************
+                    # b = b_efetivo * 2???? ********************************************************************************************************************************
                     area_al = b_efetivo * self.tf_text
+# ************************************************************************************************************
             area_efetiva_total = area_aa + area_al
             nrdc = psi*area_efetiva_total*self.fy/self.y_um
             if self.fn <= nrdc:
