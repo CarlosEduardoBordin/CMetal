@@ -125,4 +125,5 @@ class VerificationProcess:
                 #passa
                 return True
 
-    
+    def shear_force(self):
+        

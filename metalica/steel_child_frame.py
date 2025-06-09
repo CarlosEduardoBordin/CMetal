@@ -24,6 +24,53 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.data_steel_type = ReadExcelFile("steel.xlsx","tipo_de_aco")
         self.data_steel_lmn = ReadExcelFile("steel.xlsx","laminado")
 
+
+        # **************************************************************************************** SDUDM
+        #trabalhando em m, KN, Pa para realizar o calculo final!
+        #evento de atualizacao das unidades de medidas dispostas na cfg
+        self.factor_multiplier_lenght = { "mm": 0.001, "cm": 0.01, "m": 1.0}
+        self.factor_multiplier_force = {"N" : 1, "KN": 1000, "MN": 1000000}
+        self.factor_multiplier_moment = {"Nm": 1, "KNm": 1000, "MNm":1000000}
+        self.factor_multiplier_press = {"Pa" : 1, "KPa" : 1000, "MPa": 1000000, "GPa": 1000000000}
+
+        def unit_converter(value, origin_unit, conversion_factor_dict) -> float:
+            #converte usando um dicionario
+            factor = conversion_factor_dict.get(origin_unit, 1.0)
+            return value * factor
+        # funcao para quando a janela estiver ativa ela atualizar automaticamente verificar como fazer para as unidades ja colocadas
+        def on_activate_window(event):
+            #quando o evento esta ativo
+            if event.GetActive():
+                self.text_lfx.SetLabel(f"Lfx ({self.parent.get_unit_lenght()}) :")
+                self.text_lfy.SetLabel(f"Lfy ({self.parent.get_unit_lenght()}) :")
+                self.text_lz.SetLabel(f"Lfz ({self.parent.get_unit_lenght()}) :")
+                self.text_fn.SetLabel(f"Normal ({self.parent.get_unit_force()}) :")
+                self.text_fc.SetLabel(f"Cortante ({self.parent.get_unit_force()}) :")
+                self.text_mx.SetLabel(f"Momento X ({self.parent.get_unit_moment()}) :")
+                self.text_my.SetLabel(f"Momento Y ({self.parent.get_unit_moment()}) :")
+                # Transformar o valor do fu e fy
+
+                #verificar como fazer a conversao pra nao bugar
+                # self.label_fy.SetLabel(f"fy ({self.parent.get_unit_press()})")
+                # self.label_fu.SetLabel(f"fu ({self.parent.get_unit_press()})")
+                #
+                #
+                # if self.text_fy.get_value() and self.text_fu  !=0 :
+                #     fy, fu  = self.text_fy.get_value(), self.text_fu.get_value()
+                #     fy_converted = unit_converter(float(fy), parent.get_unit_press(), self.factor_multiplier_press)
+                #     print(f"fy_converted = {fy_converted}")
+                #     self.text_fy.SetValue(str(fy_converted))
+                #     self.label_fy.SetLabel(f"fy ({self.parent.get_unit_press()})")
+                #     fu_converted = unit_converter(fu, parent.get_unit_press(), self.factor_multiplier_press)
+                #     # print(f"fu_converted = {fu_converted}")
+                #     self.text_fu.SetValue(str(fu_converted))
+
+
+            event.Skip()
+        self.Bind(wx.EVT_ACTIVATE, on_activate_window)
+        # ****************************************************************************************************************
+
+
         def load_values_fy_fu(event):
             selected_item = self.select_steel_type_menu.GetValue()
             fy_fu = self.data_steel_type.get_name_and_return_col_value("Tipo",f"{selected_item}",["fy", "fu"])
@@ -64,41 +111,56 @@ class SteelChildFrame(wx.MDIChildFrame):
         def on_values_cfg(event):
             values_cfg = ValuesConfiguration(self.parent,"Configurar as variáveis")
             values_cfg.Show()
+        def on_calculate(event):
+            fn_value = self.input_fn.get_value()
+            print(f"valor get_unit_force = {parent.get_unit_force()}")
+            print(f"valor factor_multiplier_force = {self.factor_multiplier_force}")
+            fn_em_n = unit_converter(fn_value, parent.get_unit_force(), self.factor_multiplier_force)
+            print(f"Valor em N = {fn_em_n}")
 
         #------------------------------------------------
-        self.window_main_panel = wx.Panel(self) #cria o painel para por os objetos
+         # self.window_main_panel = wx.Panel(self) #cria o painel para por os objetos -> mudar para scroll notebook 720p nao aparece a janela inteira!
+        self.window_main_panel = wx.ScrolledWindow(self, style=wx.VSCROLL)
+        self.window_main_panel.SetScrollRate(0, 20)
+
         self.main_sizer = wx.BoxSizer(wx.VERTICAL) #define a organizacao das formas no sizer principal
         #------------------------------------------------- selecao do aco
+        # self.inner_panel = wx.Panel(self.window_main_panel)
+        # self.inner_panel.SetMinSize((460, -1))  # define largura fixa
+        # self.inner_panel.SetMaxSize((460, -1))  # trava a largura
+
+
         self.box_steel_type = StaticBox(self.window_main_panel, "Tipo do aço",orientation = "vertical")
         self.box_steel_selection_select_menu = StaticBox(self.box_steel_type, box_label = "Selecione uma opção", orientation = "horizontal") # staticbox de selecao
-        self.box_steel_type.widgets_add(self.box_steel_selection_select_menu,  0,True) # adiciona a static box de selecao ao sizer principal
+        self.box_steel_type.widgets_add(self.box_steel_selection_select_menu,  0,False) # adiciona a static box de selecao ao sizer principal
         steel_type = self.data_steel_type.return_value_by_one_col("Tipo")
         #adiciona o select menu dentro do steel type
         self.select_steel_type_menu = wx.ComboBox(self.box_steel_selection_select_menu, id = wx.ID_ANY, style = wx.CB_READONLY,choices = steel_type, value = steel_type[0] )
-        self.box_steel_selection_select_menu.widgets_add(self.select_steel_type_menu,0, True)
+        self.box_steel_selection_select_menu.widgets_add(self.select_steel_type_menu,0, False)
         self.btn_ok = wx.Button(self.box_steel_selection_select_menu, label="Ok")
-        self.box_steel_selection_select_menu.widgets_add(self.btn_ok, 0, True)
+        self.box_steel_selection_select_menu.widgets_add(self.btn_ok, 0, False)
         self.btn_ok.Bind(wx.EVT_BUTTON, load_values_fy_fu)
         self.btn_edit = wx.Button(self.box_steel_selection_select_menu, label="Editar")
-        self.box_steel_selection_select_menu.widgets_add(self.btn_edit, 0, True)
+        self.box_steel_selection_select_menu.widgets_add(self.btn_edit, 0, False)
         self.btn_edit.Bind(wx.EVT_BUTTON, load_edit_child_frame)
         self.label_fy = wx.StaticText(self.box_steel_selection_select_menu,id=wx.ID_ANY, label="fy (Mpa)")
-        self.box_steel_selection_select_menu.widgets_add(self.label_fy, 0, True)
-        self.text_fy = TextBoxVrf(self.box_steel_selection_select_menu, value = "0", only_numeric=True)
-        self.box_steel_selection_select_menu.widgets_add(self.text_fy, 0, True)
+        self.box_steel_selection_select_menu.widgets_add(self.label_fy, 0, False)
+        self.text_fy = TextBoxVrf(self.box_steel_selection_select_menu, value = "0", only_numeric=False)
+        self.box_steel_selection_select_menu.widgets_add(self.text_fy, 0, False)
         #quebra de linha vertical
         self.box_steel_selection_select_menu.widgets_add(wx.StaticLine(self.box_steel_selection_select_menu, style=wx.LI_VERTICAL), 0,False)
         self.label_fu = wx.StaticText(self.box_steel_selection_select_menu,id=wx.ID_ANY, label="fu (Mpa)")
-        self.box_steel_selection_select_menu.widgets_add(self.label_fu, 0, True)
-        self.text_fu = TextBoxVrf(self.box_steel_selection_select_menu, value = "0", only_numeric=True)
-        self.box_steel_selection_select_menu.widgets_add(self.text_fu, 0,True)
+        self.box_steel_selection_select_menu.widgets_add(self.label_fu, 0, False)
+        self.text_fu = TextBoxVrf(self.box_steel_selection_select_menu, value = "0", only_numeric=False)
+        self.box_steel_selection_select_menu.widgets_add(self.text_fu, 0,False)
         #------------------------------------------------- selecao do perfil
         self.box_perfil = StaticBox(self.window_main_panel, "Escolha do perfil", orientation="horizontal")
         self.box_perfil_selection = StaticBox(self.box_perfil, "Selecione um perfil", orientation= "vertical")
-        self.box_perfil.widgets_add(self.box_perfil_selection, 0, "False")
+        self.box_perfil.widgets_add(self.box_perfil_selection, 0, False)
         # self.box_perfil_selection_size_fix = StaticBox(self.box_perfil, "Selecione um perfil", orientation= "vertical")
         # self.box_perfil.widgets_add(self.box_perfil_selection_size_fix, 0, "False")
         self.box_perfil_data = StaticBox(self.box_perfil, "Dados do perfil perfil", orientation="grid")
+        self.box_perfil_data.SetMaxSize((800, -1))
         self.box_perfil.widgets_add(self.box_perfil_data, 0, True)
         perfil_type = self.data_steel_lmn.return_value_by_one_col("BITOLA mm x kg/mgraus")
         self.select_steel_perfil = wx.ComboBox(self.box_perfil_selection, id = wx.ID_ANY, style = wx.CB_READONLY,choices = perfil_type) #VERIFICAR pq ele fica grande mesmo nao expandindo
@@ -202,15 +264,25 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.box_load_solicitation.widgets_add(self.input_my, 1, False)
 
 
-
-
+        #------------------------------------------------- box resultados - verificar como vai ser gerado o relatorio
         self.box_results = StaticBox(self.box_values_input, "Resultados", orientation= "vertical")
         self.box_values_input.widgets_add(self.box_results, 0, True)
+        self.calculate =  wx.Button(self.box_results, label = "Calcular")
+        self.box_results.widgets_add(self.calculate, 0, False)
+        self.calculate.Bind(wx.EVT_BUTTON, on_calculate)
+        self.box_status = StaticBox(self.box_results, "Situação:", orientation = "vertical")
+        self.box_results.widgets_add(self.box_status, 0,False)
 
+        self.status_label = wx.StaticText(self.box_status, id=wx.ID_ANY, label="STATUS", style=wx.ALIGN_CENTER_HORIZONTAL) #style=wx.ALIGN_CENTER_HORIZONTAL centralizar o texto na box
 
+        font = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+        self.status_label.SetFont(font)
 
+        self.box_status.widgets_add(self.status_label, 0, False)
 
         self.main_sizer.Add(self.box_steel_type,proportion =  0, flag = wx.ALL | wx.EXPAND, border = 5) #adiciona o primeiro staticbox ao sizer principal da janela
         self.main_sizer.Add(self.box_perfil, proportion = 0, flag = wx.ALL | wx.EXPAND, border = 5) # adiciona o escolha do perfil
         self.main_sizer.Add(self.box_values_input, proportion = 0, flag = wx.ALL | wx.EXPAND, border = 5) #adiciona o insercao de valores
+
+
         self.window_main_panel.SetSizer(self.main_sizer)

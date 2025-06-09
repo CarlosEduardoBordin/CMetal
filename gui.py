@@ -14,6 +14,11 @@ class MDIFrame(wx.MDIParentFrame):
         wx.MDIParentFrame.__init__(self, None, -1, "CMetal", size=(wx.GetDisplaySize()))
         self.Maximize(True)
         self.SetIcon(icon = wx.Icon('icones/concreframe.png', wx.BITMAP_TYPE_PNG))  # Definindo o ícone para o MDIFrame
+        #unidades de medida pre-definidas
+        self.lenght_unit = "m"
+        self.force_unit = "KN"
+        self.moment_unit = "KNm"
+        self.press_unit = "MPa"
         # Criar um item
         menu = wx.Menu()
         # Criar um item de menu
@@ -75,6 +80,30 @@ class MDIFrame(wx.MDIParentFrame):
         sobre_child_frame = SobreChildFrame(self)
         sobre_child_frame.Show()
 
+    #variaveis de unidade de medidas
+    def set_unit_lenght(self, unit):
+        self.lenght_unit = unit
+
+    def get_unit_lenght(self):
+        return self.lenght_unit
+
+    def set_unit_force(self, unit):
+        self.force_unit = unit
+
+    def get_unit_force(self):
+        return self.force_unit
+
+    def set_unit_moment(self, unit):
+        self.moment_unit = unit
+
+    def get_unit_moment(self):
+        return self.moment_unit
+
+    def set_unit_press(self, unit):
+        self.press_unit = unit
+
+    def get_unit_press(self):
+        return self.press_unit
 
 # Cria aplicacao Wx
 app = wx.App(False)
