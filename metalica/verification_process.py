@@ -1,13 +1,11 @@
 import wx
 import numpy as np
-from statistics import fmean
-from OpenGL.raw.GLES2.NV.non_square_matrices import GL_FLOAT_MAT2x3_NV
 
 
 class VerificationProcess:
     def __init__(self, linear_mass_text, d_text, bf_text, tw_text, tf_text, h_text, d_l_text, area_text, i_x_text, w_x_text, r_x_text,
                  z_x_text, i_y_text, w_y_text, r_y_text, z_y_text, r_t_text, i_t_text, bf_two_text, d_tw_text, cw_text, u_text, fy, fu, lfx, lfy, lfz,
-                 fn, fc, mf, y_um, y_dois, e):
+                 fn, fc, mfx, mfy, y_um, y_dois, e, cb):
         self.linear_mass_text = linear_mass_text
         self.d_text = d_text
         self.bf_text = bf_text
@@ -37,10 +35,12 @@ class VerificationProcess:
         self.lfz = lfz
         self.fn = fn
         self.fc = fc
-        self.mf = mf
+        self.mfx = mfx
+        self.mfy = mfy
         self.y_um = y_um
         self.y_dois = y_dois
         self.e = e
+        self.cb = cb
 
 # para perfis laminados
 
@@ -105,7 +105,7 @@ class VerificationProcess:
             nrdc = psi*area_efetiva_total*self.fy/self.y_um
             if self.fn <= nrdc:
                 #elemento passa
-                return True
+                return True , nrdc
             else:
                 #elemento nao passa
                 return False
@@ -120,10 +120,183 @@ class VerificationProcess:
             ntsd = self.fn
             if ntsd > ntrd:
                 #nao passa
-                return False
+                return False, ntrd
             else:
                 #passa
                 return True
 
     def shear_force(self):
-        
+        #sf = shear force
+        lambda_sf = self.h_text/self.tw_text
+        lambda_p = 1.1*np.sqrt(5.34*self.e/self.fy)
+        lambda_r = 1.37*np.sqrt(5.34*self.e/self.fy)
+        aw = 2*self.bf_text*self.tf_text
+        vpl = 0.6*aw*self.fy
+
+        if lambda_sf <= lambda_p:
+            vrd = vpl/self.y_um
+        elif lambda_p < lambda_sf <= lambda_r:
+            vrd = (lambda_p/lambda_sf)*(vpl/self.y_um)
+        elif lambda_sf >= lambda_r:
+            vrd = 1.24*((lambda_p/lambda_sf)**2)*(vpl/self.y_um)
+
+        if self.fc <= vrd:
+            return True, vrd
+        else:
+            return False
+
+    def moment_force_x(self):
+        mrd_flt, mrd_flm, mrd_fla = 0, 0, 0 #inicializando para nao dar problema
+        #flambagem lateral com torcao
+        #*********************************************************************************************
+        #considerando lfx como comprimento de flambagem
+        lambda_flt = self.lfx/self.r_y_text
+        #Tabela D1 considerando 2 eixos de simetria
+        lambda_flt_p = 1.76*np.sqrt(self.e/self.fy)
+        #considerar 30% do fy para sigma
+        beta = (self.fy-0.3*self.fy)*self.w_x_text/(self.e*self.i_t_text)
+        lambda_flt_r = ((1.38*self.cb*np.sqrt(self.i_y_text*self.i_t_text)/(self.r_y_text*self.i_t_text*beta)))*np.sqrt(1+np.sqrt(1+(27*self.cw_text*beta**2)/((self.cb**2)*self.i_y_text)))
+        mr_flt = (self.fy-0.3*self.fy)*self.w_x_text
+        mpl_flt = self.z_x_text*self.fy
+
+        if lambda_flt <= lambda_flt_p:
+            mrd_flt = mpl_flt/self.y_um
+        elif lambda_flt_p < lambda_flt <= lambda_flt_r:
+            mrd_flt = (1/self.y_um)*(mpl_flt-((mpl_flt-mr_flt)*((lambda_flt-lambda_flt_p)/(lambda_flt_r-lambda_flt_p))))
+        elif lambda_flt > lambda_flt_r:
+            mcr_flt = ((self.cb*(np.pi**2)*self.e*self.i_y_text)/(self.lfx**2))*np.sqrt((self.cw_text/self.i_y_text)*(1+0.039*(self.i_t_text*(self.lfx**2)/self.cw_text)))
+            mrd_flt = mcr_flt/self.y_um
+
+        # flambagem local da mesa comprimida
+        # *********************************************************************************************
+        lambda_flm = (self.bf_text/2)/self.tf_text
+        lambda_flm_p = 0.38*np.sqrt(self.e/self.fy)
+        lambda_flm_r = 0.83*np.sqrt(self.e/(self.fy-0.3*self.fy))
+
+        mr_flm = (self.fy-0.3*self.fy)*self.w_x_text
+
+        mpl_flm = self.z_x_text*self.fy
+
+        if lambda_flm <= lambda_flm_p:
+            mrd_flm = mpl_flm/self.y_um
+        elif lambda_flm_p < lambda_flm <= lambda_flm_r:
+            mrd_flm = (1/self.y_um)*(mpl_flm-((mpl_flm-mr_flm)*((lambda_flm-lambda_flm_p)/(lambda_flm_r-lambda_flm_p))))
+        elif lambda_flm > lambda_flm_r:
+            mcr_flm = (0.69 * self.e) / (lambda_flm ** 2) * (self.i_x_text/(self.d_text/2)) # wc  = wx = ix/(d/2)
+            mrd_flm = mcr_flm/self.y_um
+
+        # flambagem local da alma
+        # *********************************************************************************************
+        lambda_fla = self.h_text/self.tw_text
+        lambda_fla_p = 3.76*np.sqrt(self.e/self.fy)
+        lambda_fla_r = 5.7*np.sqrt(self.e/self.fy)
+
+        mpl_fla = self.z_x_text*self.fy
+        mr_fla = self.fy*self.w_x_text
+
+        if lambda_fla <= lambda_fla_p:
+            mrd_fla = mpl_fla / self.y_um
+        elif lambda_fla_p < lambda_fla <= lambda_fla_r:
+            mrd_fla = (1 / self.y_um) * (
+                        mpl_fla - ((mpl_fla - mr_fla) * ((lambda_fla - lambda_fla_p) / (lambda_fla_r - lambda_fla_p))))
+        elif lambda_fla > lambda_fla_r:
+            mrd_fla = False # vai dar erro quando tentar achar o minimo usando numpy, logo retorna Falso
+        try:
+            mrd_min = np.min([mrd_flt, mrd_flm, mrd_fla])
+            mrd_calc = 1.5*self.w_x_text*self.fy/self.y_um
+            if mrd_min <= mrd_calc:
+                if self.mfx <= mrd_min:
+                    return True, mrd_min
+                else:
+                    return False
+            else:
+                return False
+
+        except :
+            return False
+
+
+    def moment_force_y(self):
+        mrd_flt, mrd_flm, mrd_fla = 0, 0, 0 #inicializando para nao dar problema
+        #flambagem lateral com torcao
+        #*********************************************************************************************
+        #nao se aplica segundo a norma para momento no menor eixo de inercia
+        #verificar o item novamente para ver!
+
+        # flambagem local da mesa comprimida
+        # *********************************************************************************************
+        lambda_flm = self.bf_text/(2*self.tf_text)
+        lambda_flm_p = 0.38*np.sqrt(self.e/self.fy)
+        lambda_flm_r = 0.83*np.sqrt(self.e/(self.fy-0.3*self.fy))
+
+
+        ############################################ **********************
+        mr_flm = (self.fy-0.3*self.fy)*self.w_y_text
+
+        mpl_flm = self.z_y_text*self.fy
+
+        if lambda_flm <= lambda_flm_p:
+            mrd_flm = mpl_flm/self.y_um
+        elif lambda_flm_p < lambda_flm <= lambda_flm_r:
+            mrd_flm = (1/self.y_um)*(mpl_flm-((mpl_flm-mr_flm)*((lambda_flm-lambda_flm_p)/(lambda_flm_r-lambda_flm_p))))
+        elif lambda_flm > lambda_flm_r:
+
+            #verificar se fica ix ou iy
+            mcr_flm = (0.69 * self.e) / (lambda_flm ** 2) * (self.i_x_text/(self.d_text/2)) # wc  = wx = ix/(d/2)
+            mrd_flm = mcr_flm/self.y_um
+
+        # flambagem local da alma
+        # *********************************************************************************************
+
+
+        try:
+            mrd_min = np.min([mrd_flt, mrd_flm, mrd_fla])
+            mrd_calc = 1.5*self.w_y_text*self.fy/self.y_um
+            if mrd_min <= mrd_calc:
+                if self.mfy <= mrd_min:
+                    return True, mrd_min
+                else:
+                    return False
+            else:
+                return False
+
+        except :
+            return False
+
+
+    def  combined_forces(self):
+        #fazer a verificao aqui! ver na norma
+        nrd = self.normal()
+        vrd = self.shear_force()
+        mrdx = self.moment_force_x()
+        mrdy = self.moment_force_y()
+        print(f"nrd = {nrd}")
+        print(f"vrd = {vrd}")
+        print(f"mrdx = {mrdx}")
+        print(f"mrdy = {mrdy}")
+
+        nsd_nrd = self.fn/nrd[1]
+        print(f"nsd/nrd = {nsd_nrd}")
+
+        if nsd_nrd >= 0.2:
+           last_verif =  nsd_nrd+(8/9)*((self.mfx/mrdx[1])+(self.mfy/mrdy[1]))
+           if last_verif <= 1:
+               print("Passou")
+               return True
+           else:
+               print("Nao passou!")
+        else:
+            last_verif = nsd_nrd*0.5 + ((self.mfx / mrdx[1]) + (self.mfy / mrdy[1]))
+            if last_verif <= 1:
+                print("Passou")
+                return True
+            else:
+                print("Nao passou!")
+        return None
+
+    def calculate(self):
+        combined_forces()
+
+
+
+

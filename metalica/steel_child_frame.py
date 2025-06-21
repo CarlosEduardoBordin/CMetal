@@ -112,11 +112,16 @@ class SteelChildFrame(wx.MDIChildFrame):
             values_cfg = ValuesConfiguration(self.parent,"Configurar as variáveis")
             values_cfg.Show()
         def on_calculate(event):
+
             fn_value = self.input_fn.get_value()
-            print(f"valor get_unit_force = {parent.get_unit_force()}")
-            print(f"valor factor_multiplier_force = {self.factor_multiplier_force}")
-            fn_em_n = unit_converter(fn_value, parent.get_unit_force(), self.factor_multiplier_force)
-            print(f"Valor em N = {fn_em_n}")
+            fc_value = self.input_fc.get_value()
+            mfx_value = self.input_mx.get_value()
+            mfy_value = self.input_my.get_value()
+
+            # print(f"valor get_unit_force = {parent.get_unit_force()}")
+            # print(f"valor factor_multiplier_force = {self.factor_multiplier_force}")
+            # fn_em_n = unit_converter(fn_value, parent.get_unit_force(), self.factor_multiplier_force)
+            # print(f"Valor em N = {fn_em_n}")
 
         #------------------------------------------------
          # self.window_main_panel = wx.Panel(self) #cria o painel para por os objetos -> mudar para scroll notebook 720p nao aparece a janela inteira!
