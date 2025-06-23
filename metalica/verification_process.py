@@ -5,7 +5,7 @@ import numpy as np
 class VerificationProcess:
     def __init__(self, linear_mass_text, d_text, bf_text, tw_text, tf_text, h_text, d_l_text, area_text, i_x_text, w_x_text, r_x_text,
                  z_x_text, i_y_text, w_y_text, r_y_text, z_y_text, r_t_text, i_t_text, bf_two_text, d_tw_text, cw_text, u_text, fy, fu, lfx, lfy, lfz,
-                 fn, fc, mfx, mfy, y_um, y_dois, e, cb):
+                 flb, fn, fc, mfx, mfy, y_um, y_dois, g, e, cb):
         self.linear_mass_text = linear_mass_text
         self.d_text = d_text
         self.bf_text = bf_text
@@ -33,6 +33,7 @@ class VerificationProcess:
         self.lfx = lfx
         self.lfy = lfy
         self.lfz = lfz
+        self.flb = flb
         self.fn = fn
         self.fc = fc
         self.mfx = mfx
@@ -40,6 +41,7 @@ class VerificationProcess:
         self.y_um = y_um
         self.y_dois = y_dois
         self.e = e
+        self.g = g
         self.cb = cb
 
 # para perfis laminados
@@ -56,6 +58,7 @@ class VerificationProcess:
             n_e_x = (np.pi**2)*self.e*self.i_x_text/(self.lfx**2)
             n_e_y = (np.pi**2)*self.e*self.i_y_text/(self.lfy**2)
             r_o = np.sqrt(self.r_x_text**2 + self.r_y_text**2 + 0 + 0) # considerando o perfil como simetrico
+
             n_e_z = (1/ (r_o**2))*(((np.pi**2)*self.e*self.cw_text/(self.lfz**2))+self.g * self.i_t_text) # J = it na tabela
             n_e = np.min([n_e_x, n_e_y, n_e_z])
             #lambda0 5.3.3.2
@@ -120,10 +123,10 @@ class VerificationProcess:
             ntsd = self.fn
             if ntsd > ntrd:
                 #nao passa
-                return False, ntrd
+                return False
             else:
                 #passa
-                return True
+                return True, ntrd
 
     def shear_force(self):
         #sf = shear force
@@ -149,8 +152,9 @@ class VerificationProcess:
         mrd_flt, mrd_flm, mrd_fla = 0, 0, 0 #inicializando para nao dar problema
         #flambagem lateral com torcao
         #*********************************************************************************************
-        #considerando lfx como comprimento de flambagem
-        lambda_flt = self.lfx/self.r_y_text
+        #considerando lfz como comprimento de flambagem
+        lambda_flt = self.flb/self.r_y_text
+
         #Tabela D1 considerando 2 eixos de simetria
         lambda_flt_p = 1.76*np.sqrt(self.e/self.fy)
         #considerar 30% do fy para sigma
@@ -164,7 +168,7 @@ class VerificationProcess:
         elif lambda_flt_p < lambda_flt <= lambda_flt_r:
             mrd_flt = (1/self.y_um)*(mpl_flt-((mpl_flt-mr_flt)*((lambda_flt-lambda_flt_p)/(lambda_flt_r-lambda_flt_p))))
         elif lambda_flt > lambda_flt_r:
-            mcr_flt = ((self.cb*(np.pi**2)*self.e*self.i_y_text)/(self.lfx**2))*np.sqrt((self.cw_text/self.i_y_text)*(1+0.039*(self.i_t_text*(self.lfx**2)/self.cw_text)))
+            mcr_flt = ((self.cb*(np.pi**2)*self.e*self.i_y_text)/(self.flb**2))*np.sqrt((self.cw_text/self.i_y_text)*(1+0.039*(self.i_t_text*(self.flb**2)/self.cw_text)))
             mrd_flt = mcr_flt/self.y_um
 
         # flambagem local da mesa comprimida
@@ -202,8 +206,9 @@ class VerificationProcess:
         elif lambda_fla > lambda_fla_r:
             mrd_fla = False # vai dar erro quando tentar achar o minimo usando numpy, logo retorna Falso
         try:
-            mrd_min = np.min([mrd_flt, mrd_flm, mrd_fla])
-            mrd_calc = 1.5*self.w_x_text*self.fy/self.y_um
+            mrd_calc = 1.5 * self.w_x_text * self.fy / self.y_um
+            mrd_min = np.min([mrd_flt, mrd_flm, mrd_fla,mrd_calc ])
+
             if mrd_min <= mrd_calc:
                 if self.mfx <= mrd_min:
                     return True, mrd_min
@@ -250,8 +255,9 @@ class VerificationProcess:
 
 
         try:
-            mrd_min = np.min([mrd_flt, mrd_flm, mrd_fla])
             mrd_calc = 1.5*self.w_y_text*self.fy/self.y_um
+            mrd_min = np.min([mrd_calc, mrd_flm ])
+            print(f"Y mrd_min =  {mrd_min} , Y mrd_calc = {mrd_calc}")
             if mrd_min <= mrd_calc:
                 if self.mfy <= mrd_min:
                     return True, mrd_min
@@ -278,24 +284,28 @@ class VerificationProcess:
         nsd_nrd = self.fn/nrd[1]
         print(f"nsd/nrd = {nsd_nrd}")
 
-        if nsd_nrd >= 0.2:
-           last_verif =  nsd_nrd+(8/9)*((self.mfx/mrdx[1])+(self.mfy/mrdy[1]))
-           if last_verif <= 1:
-               print("Passou")
-               return True
-           else:
-               print("Nao passou!")
+        if nrd[0] == False or vrd[0] == False  or mrdx[0] == False or mrdy[0] == False :
+            print("Nao passou!")
         else:
-            last_verif = nsd_nrd*0.5 + ((self.mfx / mrdx[1]) + (self.mfy / mrdy[1]))
-            if last_verif <= 1:
-                print("Passou")
-                return True
+            if nsd_nrd >= 0.2:
+                last_verif = nsd_nrd + (8 / 9) * ((self.mfx / mrdx[1]) + (self.mfy / mrdy[1]))
+                if last_verif <= 1:
+                    print("Passou")
+                    return True
+                else:
+                    print("Nao passou!")
             else:
-                print("Nao passou!")
-        return None
+                last_verif = nsd_nrd * 0.5 + ((self.mfx / mrdx[1]) + (self.mfy / mrdy[1]))
+                if last_verif <= 1:
+                    print("Passou")
+                    return True
+                else:
+                    print("Nao passou!")
+            return None
+
 
     def calculate(self):
-        combined_forces()
+        self.combined_forces()
 
 
 

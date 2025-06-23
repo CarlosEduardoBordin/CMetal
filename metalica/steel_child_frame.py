@@ -1,11 +1,13 @@
 import os.path
 import wx
 import wx.adv
+import re #biblioteca de expressoes
 from metalica.edit_child_frame import EditChildFrame
 from metalica.widget_class import StaticBox
 from metalica.widget_class import TextBoxVrf
 from metalica.table_manipulation import ReadExcelFile
 from metalica.matplot_img_draw import DrawBeam
+from metalica.verification_process import VerificationProcess
 from metalica.help_steel_child_frame import ImgHelpButton
 from metalica.values_config_child_frame import ValuesConfiguration
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
@@ -25,18 +27,48 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.data_steel_lmn = ReadExcelFile("steel.xlsx","laminado")
 
 
-        # **************************************************************************************** SDUDM
+        # **************************************************************************************** SUM sistema de unidade de medida
         #trabalhando em m, KN, Pa para realizar o calculo final!
         #evento de atualizacao das unidades de medidas dispostas na cfg
         self.factor_multiplier_lenght = { "mm": 0.001, "cm": 0.01, "m": 1.0}
+        self.factor_multiplier_area = {"mm^2" : 0.000001, "cm^2" : 0.0001, "m^2" : 1 }
+        self.factor_multiplier_volume = {"mm^3" : 0.000000001, "cm^3" : 0.000001, "m^3" : 1 }
+        self.factor_multiplier_inertia = {"mm^4": 0.000000000001, "cm^4": 0.00000001, "m^4": 1}
+        self.factor_multiplier_six_elevated = {"mm^6": 0.000000000000000001, "cm^6": 0.000000000001, "m^6": 1}
         self.factor_multiplier_force = {"N" : 1, "KN": 1000, "MN": 1000000}
         self.factor_multiplier_moment = {"Nm": 1, "KNm": 1000, "MNm":1000000}
         self.factor_multiplier_press = {"Pa" : 1, "KPa" : 1000, "MPa": 1000000, "GPa": 1000000000}
 
-        def unit_converter(value, origin_unit, conversion_factor_dict) -> float:
-            #converte usando um dicionario
-            factor = conversion_factor_dict.get(origin_unit, 1.0)
-            return value * factor
+        # def unit_converter(value, origin_unit, conversion_factor_dict) -> float: #converter para float
+        #     #converte usando um dicionario
+        #     factor = conversion_factor_dict.get(origin_unit, 1.0)
+        #     return value * factor
+
+        def unit_converter(value: float, from_unit: str, to_unit: str, conversion_factor_dict: dict) -> float:
+            if from_unit not in conversion_factor_dict:
+                raise ValueError(f"Unidade de origem '{from_unit}' não reconhecida.")
+            if to_unit not in conversion_factor_dict:
+                raise ValueError(f"Unidade de destino '{to_unit}' não reconhecida.")
+
+            # Converter para unidade base (multiplicador = 1), depois para unidade de destino
+            value_in_base = value * conversion_factor_dict[from_unit]
+            converted_value = value_in_base / conversion_factor_dict[to_unit]
+            return converted_value
+
+
+        def unit_extractor(text_for_extratiction):
+            #acha a unidade de dentro do texto entre ()
+            match = re.search(r'\((.*?)\)', text_for_extratiction)
+            if match:
+                return match.group(1)
+
+           #se nao achar pega a ultima palavra - ver se funciona
+            parts = text_for_extratiction.strip().split()
+            if parts:
+                return parts[-1]
+
+            return None  # Retorna None se nenhuma unidade for encontrada
+
         # funcao para quando a janela estiver ativa ela atualizar automaticamente verificar como fazer para as unidades ja colocadas
         def on_activate_window(event):
             #quando o evento esta ativo
@@ -80,13 +112,9 @@ class SteelChildFrame(wx.MDIChildFrame):
         def load_edit_child_frame(event):
             edit_child = EditChildFrame(self.parent,"Editor")
             edit_child.Show()
+            # lista de valores ja tirados do excel e ja definidos nos rotulos
         def on_select_perfil(event):
-            #lista de valores ja tirados do excel e ja definidos nos rotulos
-            label_and_object = {"Massa Linear kg/m" : self.linear_mass_text, "d (mm) : " : self.d_text, "bf (mm) : ": self.bf_text, "tw (mm) : ": self.tw_text, "tf (mm) : " : self.tf_text,
-                                "h (mm) : " : self.h_text, "d' (mm) : ": self.d_l_text, "Área (cm²) : ": self.area_text, "Ix (cm^4) : " : self.i_x_text, "Wx (cm³) : ": self.w_x_text,
-                                "rx (cm) : " :  self.r_x_text, "zx (cm) : ": self.z_x_text, "Iy (cm^4) : " :  self.i_y_text, "Wy (cm³) : " :  self.w_y_text, "ry (cm) : " : self.r_y_text,
-                                "zy (cm³) : ": self.z_y_text, "rt (cm) : " : self.r_t_text ,"It (cm^4) : " : self.i_t_text, "Mesa bf/2.tf : " :  self.bf_two_text,
-                                "Alma d'/tw : " : self.d_tw_text, "Cw (cm^6) : " : self.cw_text, "u (m²/m) : " : self.u_text}
+
             text_values = label_and_object.keys()
             option_selected = self.select_steel_perfil.GetStringSelection()
             return_values_dimension = self.data_steel_lmn.get_name_and_return_col_value("BITOLA mm x kg/mgraus",f"{option_selected}",text_values)
@@ -112,12 +140,93 @@ class SteelChildFrame(wx.MDIChildFrame):
             values_cfg = ValuesConfiguration(self.parent,"Configurar as variáveis")
             values_cfg.Show()
         def on_calculate(event):
+            # fy = self.text_fy.get_value()
+            # fu = self.text_fu.get_value()
+            # lfx_value = self.input_lfx.get_value()
+            # lfy_value = self.input_lfy.get_value()
+            # lfz_value = self.input_lfz.get_value()
+            # lb_value = self.input_lfb.get_value()
+            # fn_value = self.input_fn.get_value()
+            # fc_value = self.input_fc.get_value()
+            # mfx_value = self.input_mx.get_value()
+            # mfy_value = self.input_my.get_value()
+            fy = self.text_fy.get_value()
+            fu = self.text_fu.get_value()
+            lfx_value = unit_converter(self.input_lfx.get_value(), parent.get_unit_lenght(),"m" ,self.factor_multiplier_lenght)
+            lfy_value = unit_converter(self.input_lfy.get_value(), parent.get_unit_lenght(), "m",self.factor_multiplier_lenght)
+            lfz_value = unit_converter(self.input_lfz.get_value(), parent.get_unit_lenght(), "m",  self.factor_multiplier_lenght)
+            lb_value = unit_converter(self.input_lfb.get_value(), parent.get_unit_lenght(), "m", self.factor_multiplier_lenght)
+            fn_value = unit_converter(self.input_fn.get_value(), parent.get_unit_force(), "N", self.factor_multiplier_force)
+            fc_value = unit_converter(self.input_fc.get_value(), parent.get_unit_force(), "N", self.factor_multiplier_force)
+            mfx_value = unit_converter(self.input_mx.get_value(), parent.get_unit_moment(), "KNm", self.factor_multiplier_moment)
+            mfy_value = unit_converter(self.input_my.get_value(), parent.get_unit_moment(), "KNm", self.factor_multiplier_moment)
 
-            fn_value = self.input_fn.get_value()
-            fc_value = self.input_fc.get_value()
-            mfx_value = self.input_mx.get_value()
-            mfy_value = self.input_my.get_value()
+            text_values = label_and_object.keys()
+            option_selected = self.select_steel_perfil.GetStringSelection()
 
+            return_values_dimension = self.data_steel_lmn.get_name_and_return_col_value("BITOLA mm x kg/mgraus",
+                                                                                        f"{option_selected}",
+                                                                                        text_values)
+            value_list_perfil = list(return_values_dimension.values())
+
+            transformed_list_perfil_data = []
+            i = 0
+            for unit, value_adress in label_and_object.items():
+                search_unit = unit_extractor(unit)
+                value_converted = 0
+                if search_unit in self.factor_multiplier_lenght:
+                    value_converted = unit_converter(value_list_perfil[i], search_unit, "m", self.factor_multiplier_lenght)
+                elif search_unit in self.factor_multiplier_area:
+                    value_converted = unit_converter(value_list_perfil[i], search_unit, "m^2",
+                                                     self.factor_multiplier_area)
+                elif search_unit in self.factor_multiplier_volume:
+                    value_converted = unit_converter(value_list_perfil[i], search_unit, "m^3",
+                                                     self.factor_multiplier_volume)
+                elif search_unit in self.factor_multiplier_inertia:
+                    value_converted = unit_converter(value_list_perfil[i], search_unit, "m^4",
+                                                     self.factor_multiplier_inertia)
+                elif search_unit in self.factor_multiplier_six_elevated:
+                    value_converted = unit_converter(value_list_perfil[i], search_unit, "m^6",
+                                                     self.factor_multiplier_six_elevated)
+                elif search_unit in self.factor_multiplier_force:
+                    value_converted = unit_converter(value_list_perfil[i], search_unit, "N",
+                                                     self.factor_multiplier_force)
+                elif search_unit in self.factor_multiplier_moment:
+                    value_converted = unit_converter(value_list_perfil[i], search_unit, "Nm",
+                                                     self.factor_multiplier_moment)
+                elif search_unit in self.factor_multiplier_press:
+                    value_converted = unit_converter(value_list_perfil[i], search_unit, "Pa",
+                                                     self.factor_multiplier_press)
+                else:
+                    value_converted = value_list_perfil[i]
+                value_converted = float(value_converted)
+                transformed_list_perfil_data.extend([value_converted])
+                i += 1
+            print(transformed_list_perfil_data)
+                #     value_converted = unit_converter(numeric_value, search_unit, "m", self.factor_multiplier_lenght)
+                #     print(f"{unit} convertido para metros = {value_converted}")
+
+                # elif search_unit == "mm^2" or "cm^2" or "m^2" :
+                #     value_converted = unit_converter(value, parent.get_unit_lenght(),"m" ,self.factor_multiplier_lenght)
+                # elif search_unit == "mm"
+
+
+            # print(f"lfx = {lfx_value}, lfy = {lfy_value}, lfz = {lfz_value}, lb = {lb_value}, fn = {fn_value}, fc_value = {fc_value}, mx = {mfx_value}, my = {mfy_value}")
+            #
+            # value_list_perfil.extend([])#coloca os valores em sequencia para calculo
+            #
+            values_to_append = [float(fy)*10**6, float(fu)*10**6, lfx_value, lfy_value, lfz_value, lb_value, fn_value, fc_value, mfx_value, mfy_value, 1.1, 1.1, 200000000000,77000000000,1]
+            transformed_list_perfil_data.extend(values_to_append)
+            #
+            self.data = VerificationProcess(*transformed_list_perfil_data)
+            print(f"Dados do perfil e input = {value_list_perfil}")
+            self.data.calculate()
+
+            #     def __init__(self, linear_mass_text, d_text, bf_text, tw_text, tf_text, h_text, d_l_text, area_text, i_x_text, w_x_text, r_x_text,
+            #                  z_x_text, i_y_text, w_y_text, r_y_text, z_y_text, r_t_text, i_t_text, bf_two_text, d_tw_text, cw_text, u_text, fy, fu, lfx, lfy, lfz,
+            #                  flb, fn, fc, mfx, mfy, y_um, y_dois, e, cb):
+
+            verificate_init_values = ()
             # print(f"valor get_unit_force = {parent.get_unit_force()}")
             # print(f"valor factor_multiplier_force = {self.factor_multiplier_force}")
             # fn_em_n = unit_converter(fn_value, parent.get_unit_force(), self.factor_multiplier_force)
@@ -127,12 +236,7 @@ class SteelChildFrame(wx.MDIChildFrame):
          # self.window_main_panel = wx.Panel(self) #cria o painel para por os objetos -> mudar para scroll notebook 720p nao aparece a janela inteira!
         self.window_main_panel = wx.ScrolledWindow(self, style=wx.VSCROLL)
         self.window_main_panel.SetScrollRate(0, 20)
-
         self.main_sizer = wx.BoxSizer(wx.VERTICAL) #define a organizacao das formas no sizer principal
-        #------------------------------------------------- selecao do aco
-        # self.inner_panel = wx.Panel(self.window_main_panel)
-        # self.inner_panel.SetMinSize((460, -1))  # define largura fixa
-        # self.inner_panel.SetMaxSize((460, -1))  # trava a largura
 
 
         self.box_steel_type = StaticBox(self.window_main_panel, "Tipo do aço",orientation = "vertical")
@@ -196,7 +300,7 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.box_perfil_data.widgets_add(self.h_text, 0, False)
         self.d_l_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="d' (mm) : ")
         self.box_perfil_data.widgets_add(self.d_l_text, 0, False)
-        self.area_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="Área (cm²) : ")
+        self.area_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="Área (cm^2) : ")
         self.box_perfil_data.widgets_add(self.area_text, 0, False)
         self.i_x_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="Ix (cm^4) : ")
         self.box_perfil_data.widgets_add(self.i_x_text, 0, False)
@@ -208,11 +312,11 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.box_perfil_data.widgets_add(self.z_x_text, 0, False)
         self.i_y_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="Iy (cm^4) : ")
         self.box_perfil_data.widgets_add(self.i_y_text, 0, False)
-        self.w_y_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="Wy (cm³) : ")
+        self.w_y_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="Wy (cm^3) : ")
         self.box_perfil_data.widgets_add(self.w_y_text , 0, False)
         self.r_y_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="ry (cm) : ")
         self.box_perfil_data.widgets_add(self.r_y_text , 0, False)
-        self.z_y_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="zy (cm³) : ")
+        self.z_y_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="zy (cm^3) : ")
         self.box_perfil_data.widgets_add(self.z_y_text , 0, False)
         self.r_t_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="rt (cm) : ")
         self.box_perfil_data.widgets_add(self.r_t_text , 0, False)
@@ -224,25 +328,29 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.box_perfil_data.widgets_add(self.d_tw_text , 0, False)
         self.cw_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="Cw (cm^6) : ")
         self.box_perfil_data.widgets_add(self.cw_text , 0, False)
-        self.u_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="u (m²/m) : ")
+        self.u_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="u (m^2/m) : ")
         self.box_perfil_data.widgets_add(self.u_text , 0, False)
         #------------------------------------------------- box valores
         self.box_values_input = StaticBox(self.window_main_panel,"Verificação", orientation = "horizontal")
         #comprimentos de flambagem
         self.box_lengths = StaticBox(self.box_values_input, "Comprimentos do elemento", orientation= "grid")
         self.box_values_input.widgets_add(self.box_lengths,0, False)
-        self.text_lfx = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Lfx (m) :")
+        self.text_lfx = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Lx (m) :")
         self.box_lengths.widgets_add(self.text_lfx, 0, False)
-        self.input_lfx = wx.TextCtrl(self.box_lengths, id = wx.ID_ANY, value = "")
+        self.input_lfx = TextBoxVrf(self.box_lengths, value = "0", only_numeric=True)
         self.box_lengths.widgets_add(self.input_lfx, 1,False)
-        self.text_lfy = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Lfy (m) :")
+        self.text_lfy = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Ly (m) :")
         self.box_lengths.widgets_add(self.text_lfy, 0, False)
-        self.input_lfy = wx.TextCtrl(self.box_lengths, id = wx.ID_ANY, value = "")
+        self.input_lfy = TextBoxVrf(self.box_lengths, value = "0", only_numeric=True)
         self.box_lengths.widgets_add(self.input_lfy, 1,False)
-        self.text_lz = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Lfz (m) :")
+        self.text_lz = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Lz (m) :")
         self.box_lengths.widgets_add(self.text_lz, 0, False)
-        self.input_lz = wx.TextCtrl(self.box_lengths, id = wx.ID_ANY, value = "")
-        self.box_lengths.widgets_add(self.input_lz, 1,False)
+        self.input_lfz = TextBoxVrf(self.box_lengths,  value = "0", only_numeric=True)
+        self.box_lengths.widgets_add(self.input_lfz, 1,False)
+        self.text_lf = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Lf (m) :")
+        self.box_lengths.widgets_add(self.text_lf, 0, False)
+        self.input_lfb = TextBoxVrf(self.box_lengths,  value = "0", only_numeric=True)
+        self.box_lengths.widgets_add(self.input_lfb, 1,False)
         self.text_values_cfg = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Variáveis :")
         self.box_lengths.widgets_add(self.text_values_cfg, 0, False)
         self.button_cfg_values = wx.Button(self.box_lengths, label = "Configurar")
@@ -267,7 +375,17 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.box_load_solicitation.widgets_add(self.text_my, 0, False)
         self.input_my = TextBoxVrf(self.box_load_solicitation, value = "0",only_numeric=True)
         self.box_load_solicitation.widgets_add(self.input_my, 1, False)
-
+        #------------------------------------------------- #dicionario de variaveis
+        label_and_object = {"Massa Linear kg/m": self.linear_mass_text, "d (mm) : ": self.d_text,
+                            "bf (mm) : ": self.bf_text, "tw (mm) : ": self.tw_text, "tf (mm) : ": self.tf_text,
+                            "h (mm) : ": self.h_text, "d' (mm) : ": self.d_l_text, "Área (cm²) : ": self.area_text,
+                            "Ix (cm^4) : ": self.i_x_text, "Wx (cm³) : ": self.w_x_text,
+                            "rx (cm) : ": self.r_x_text, "zx (cm) : ": self.z_x_text, "Iy (cm^4) : ": self.i_y_text,
+                            "Wy (cm³) : ": self.w_y_text, "ry (cm) : ": self.r_y_text,
+                            "zy (cm³) : ": self.z_y_text, "rt (cm) : ": self.r_t_text,
+                            "It (cm^4) : ": self.i_t_text, "Mesa bf/2.tf : ": self.bf_two_text,
+                            "Alma d'/tw : ": self.d_tw_text, "Cw (cm^6) : ": self.cw_text,
+                            "u (m²/m) : ": self.u_text}
 
         #------------------------------------------------- box resultados - verificar como vai ser gerado o relatorio
         self.box_results = StaticBox(self.box_values_input, "Resultados", orientation= "vertical")
