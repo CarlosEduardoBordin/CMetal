@@ -5,7 +5,7 @@ import numpy as np
 class VerificationProcess:
     def __init__(self, linear_mass_text, d_text, bf_text, tw_text, tf_text, h_text, d_l_text, area_text, i_x_text, w_x_text, r_x_text,
                  z_x_text, i_y_text, w_y_text, r_y_text, z_y_text, r_t_text, i_t_text, bf_two_text, d_tw_text, cw_text, u_text, fy, fu, lfx, lfy, lfz,
-                 flb, fn, fc, mfx, mfy, y_um, y_dois, g, e, cb):
+                 flb, fn, fcx,fcy, mfx, mfy, y_um, y_dois, g, e, cb):
         self.linear_mass_text = linear_mass_text
         self.d_text = d_text
         self.bf_text = bf_text
@@ -35,7 +35,8 @@ class VerificationProcess:
         self.lfz = lfz
         self.flb = flb
         self.fn = fn
-        self.fc = fc
+        self.fcx = fcx
+        self.fcy = fcy
         self.mfx = mfx
         self.mfy = mfy
         self.y_um = y_um
@@ -128,8 +129,9 @@ class VerificationProcess:
                 #passa
                 return True, ntrd
 
-    def shear_force(self):
+    def shear_force_x(self):
         #sf = shear force
+        vrd = 0
         lambda_sf = self.h_text/self.tw_text
         lambda_p = 1.1*np.sqrt(5.34*self.e/self.fy)
         lambda_r = 1.37*np.sqrt(5.34*self.e/self.fy)
@@ -143,12 +145,35 @@ class VerificationProcess:
         elif lambda_sf >= lambda_r:
             vrd = 1.24*((lambda_p/lambda_sf)**2)*(vpl/self.y_um)
 
-        if self.fc <= vrd:
+        if self.fcx <= vrd:
+            return True, vrd
+        else:
+            return False
+
+    def shear_force_y(self):
+        vrd = 0
+        #sf = shear force
+        lambda_sf = (self.bf_text/2)/self.tf_text
+        #kv = 1.2 item 5.4.3.3
+        lambda_p = 1.1*np.sqrt((1.2*self.e)/self.fy)
+        lambda_r = 1.37*np.sqrt(1.2*self.e/self.fy)
+        aw = 2*self.bf_text*self.tf_text
+        vpl = 0.6*aw*self.fy
+
+        if lambda_sf <= lambda_p:
+            vrd = vpl/self.y_um
+        elif lambda_p < lambda_sf <= lambda_r:
+            vrd = (lambda_p/lambda_sf)*(vpl/self.y_um)
+        elif lambda_sf >= lambda_r:
+            vrd = 1.24*((lambda_p/lambda_sf)**2)*(vpl/self.y_um)
+
+        if self.fcy <= vrd:
             return True, vrd
         else:
             return False
 
     def moment_force_x(self):
+        print(f"e = {self.e}")
         mrd_flt, mrd_flm, mrd_fla = 0, 0, 0 #inicializando para nao dar problema
         #flambagem lateral com torcao
         #*********************************************************************************************
@@ -162,6 +187,7 @@ class VerificationProcess:
         lambda_flt_r = ((1.38*self.cb*np.sqrt(self.i_y_text*self.i_t_text)/(self.r_y_text*self.i_t_text*beta)))*np.sqrt(1+np.sqrt(1+(27*self.cw_text*beta**2)/((self.cb**2)*self.i_y_text)))
         mr_flt = (self.fy-0.3*self.fy)*self.w_x_text
         mpl_flt = self.z_x_text*self.fy
+        print(f"lambda FLT {lambda_flt} lambdaP {lambda_flt_p} lambdaR {lambda_flt_r}")
 
         if lambda_flt <= lambda_flt_p:
             mrd_flt = mpl_flt/self.y_um
@@ -177,6 +203,8 @@ class VerificationProcess:
         lambda_flm_p = 0.38*np.sqrt(self.e/self.fy)
         lambda_flm_r = 0.83*np.sqrt(self.e/(self.fy-0.3*self.fy))
 
+        print(f"lambda FLM {lambda_flm} lambdaP {lambda_flm_p} lambdaR {lambda_flm_r}")
+
         mr_flm = (self.fy-0.3*self.fy)*self.w_x_text
 
         mpl_flm = self.z_x_text*self.fy
@@ -191,9 +219,11 @@ class VerificationProcess:
 
         # flambagem local da alma
         # *********************************************************************************************
-        lambda_fla = self.h_text/self.tw_text
+        lambda_fla = self.d_l_text/self.tw_text
         lambda_fla_p = 3.76*np.sqrt(self.e/self.fy)
         lambda_fla_r = 5.7*np.sqrt(self.e/self.fy)
+
+        print(f"lambda FLA {lambda_fla} lambdaP {lambda_fla_p} lambdaR {lambda_fla_r}")
 
         mpl_fla = self.z_x_text*self.fy
         mr_fla = self.fy*self.w_x_text
@@ -208,7 +238,7 @@ class VerificationProcess:
         try:
             mrd_calc = 1.5 * self.w_x_text * self.fy / self.y_um
             mrd_min = np.min([mrd_flt, mrd_flm, mrd_fla,mrd_calc ])
-
+            print(f"mrd_flt = {mrd_flt}, mrd_flm {mrd_flm}, mrd_fla {mrd_fla}, mrd_calc {mrd_calc}")
             if mrd_min <= mrd_calc:
                 if self.mfx <= mrd_min:
                     return True, mrd_min
@@ -247,7 +277,7 @@ class VerificationProcess:
         elif lambda_flm > lambda_flm_r:
 
             #verificar se fica ix ou iy
-            mcr_flm = (0.69 * self.e) / (lambda_flm ** 2) * (self.i_x_text/(self.d_text/2)) # wc  = wx = ix/(d/2)
+            mcr_flm = (0.69 * self.e) / (lambda_flm ** 2) * (self.w_y_text)
             mrd_flm = mcr_flm/self.y_um
 
         # flambagem local da alma
@@ -273,18 +303,20 @@ class VerificationProcess:
     def  combined_forces(self):
         #fazer a verificao aqui! ver na norma
         nrd = self.normal()
-        vrd = self.shear_force()
+        vrd_x = self.shear_force_x()
+        vrd_y = self.shear_force_y()
         mrdx = self.moment_force_x()
         mrdy = self.moment_force_y()
         print(f"nrd = {nrd}")
-        print(f"vrd = {vrd}")
+        print(f"vrdx = {vrd_x}")
+        print(f"vrdy = {vrd_y}")
         print(f"mrdx = {mrdx}")
         print(f"mrdy = {mrdy}")
 
         nsd_nrd = self.fn/nrd[1]
         print(f"nsd/nrd = {nsd_nrd}")
 
-        if nrd[0] == False or vrd[0] == False  or mrdx[0] == False or mrdy[0] == False :
+        if nrd[0] == False or vrd_x[0] == False  or mrdx[0] == False or mrdy[0] == False :
             print("Nao passou!")
         else:
             if nsd_nrd >= 0.2:
@@ -306,7 +338,14 @@ class VerificationProcess:
 
     def calculate(self):
         self.combined_forces()
-
+        print(f"self.linear_mass_text {self.linear_mass_text}, self.d_text {self.d_text},  self.bf_text {self.bf_text},self.tw_text {self.tw_text}, self.tf_text {self.tf_text} "
+              f" self.h_text {self.h_text}, self.d_l_text {self.d_l_text}, self.d_l_text {self.d_l_text}, self.d_l_text {self.d_l_text}, self.d_l_text {self.d_l_text}"
+              f" self.area_text {self.area_text}, self.i_x_text {self.i_x_text}, self.i_x_text {self.i_x_text}, self.w_x_text {self.w_x_text}, self.r_x_text {self.r_x_text}"
+              f" self.z_x_text {self.z_x_text}, self.i_y_text {self.i_y_text}, self.w_y_text {self.w_y_text}, self.r_y_text {self.r_y_text}, self.z_y_text {self.z_y_text}"
+              f" self.r_t_text {self.r_t_text}, self.i_t_text {self.i_t_text}, self.bf_two_text {self.bf_two_text}, self.d_tw_text {self.d_tw_text}, self.cw_text {self.cw_text}"
+              f" self.u_text {self.u_text}, self.fy {self.fy}, self.fu {self.fu}, self.lfx {self.lfx}, self.lfy {self.lfy}, self.lfz {self.lfz}, self.flb {self.flb}"
+              f" self.fn {self.fn}, self.fcx {self.fcx}, self.fcy {self.fcy}, self.mfx {self.mfx}, self.mfy {self.mfy}, self.y_um {self.y_um}, self.y_dois {self.y_dois},"
+              f"self.e {self.e}, self.g {self.g}, self.cb {self.cb}")
 
 
 
