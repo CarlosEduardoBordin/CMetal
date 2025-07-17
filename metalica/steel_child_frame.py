@@ -76,9 +76,10 @@ class SteelChildFrame(wx.MDIChildFrame):
                 self.text_lfx.SetLabel(f"Lfx ({self.parent.get_unit_lenght()}) :")
                 self.text_lfy.SetLabel(f"Lfy ({self.parent.get_unit_lenght()}) :")
                 self.text_lz.SetLabel(f"Lfz ({self.parent.get_unit_lenght()}) :")
-                self.text_fnx.SetLabel(f"Normal X ({self.parent.get_unit_force()}) :")
-                self.text_fny.SetLabel(f"Normal Y ({self.parent.get_unit_force()}) :")
-                self.text_fc.SetLabel(f"Cortante ({self.parent.get_unit_force()}) :")
+                self.text_fnc.SetLabel(f"Normal compressão ({self.parent.get_unit_force()}) :")
+                self.text_fnt.SetLabel(f"Normal tração ({self.parent.get_unit_force()}) :")
+                self.text_fcx.SetLabel(f"Cortante X ({self.parent.get_unit_force()}) :")
+                self.text_fcy.SetLabel(f"Cortante Y ({self.parent.get_unit_force()}) :")
                 self.text_mx.SetLabel(f"Momento X ({self.parent.get_unit_moment()}) :")
                 self.text_my.SetLabel(f"Momento Y ({self.parent.get_unit_moment()}) :")
                 # Transformar o valor do fu e fy
@@ -157,9 +158,12 @@ class SteelChildFrame(wx.MDIChildFrame):
             lfy_value = unit_converter(self.input_lfy.get_value(), parent.get_unit_lenght(), "m",self.factor_multiplier_lenght)
             lfz_value = unit_converter(self.input_lfz.get_value(), parent.get_unit_lenght(), "m",  self.factor_multiplier_lenght)
             lb_value = unit_converter(self.input_lfb.get_value(), parent.get_unit_lenght(), "m", self.factor_multiplier_lenght)
-            fnx_value = unit_converter(self.input_fnx.get_value(), parent.get_unit_force(), "N", self.factor_multiplier_force)
-            fny_value = unit_converter(self.input_fny.get_value(), parent.get_unit_force(), "N", self.factor_multiplier_force)
-            fc_value = unit_converter(self.input_fc.get_value(), parent.get_unit_force(), "N", self.factor_multiplier_force)
+            fnt_value = unit_converter(self.input_fnt.get_value(), parent.get_unit_force(), "N", self.factor_multiplier_force)
+            fnc_value = unit_converter(self.input_fnc.get_value(), parent.get_unit_force(), "N",
+                                       self.factor_multiplier_force)
+            fcx_value = unit_converter(self.input_fcx.get_value(), parent.get_unit_force(), "N", self.factor_multiplier_force)
+            fcy_value = unit_converter(self.input_fcy.get_value(), parent.get_unit_force(), "N",
+                                      self.factor_multiplier_force)
             mfx_value = unit_converter(self.input_mx.get_value(), parent.get_unit_moment(), "KNm", self.factor_multiplier_moment)
             mfy_value = unit_converter(self.input_my.get_value(), parent.get_unit_moment(), "KNm", self.factor_multiplier_moment)
 
@@ -207,7 +211,7 @@ class SteelChildFrame(wx.MDIChildFrame):
             print(transformed_list_perfil_data)
 
 
-            values_to_append = [float(fy)*10**6, float(fu)*10**6, lfx_value, lfy_value, lfz_value, lb_value, fnx_value, fny_value, fc_value, mfx_value, mfy_value, 1.1, 1.1, 77000000000,200000000000,1]
+            values_to_append = [float(fy)*10**6, float(fu)*10**6, lfx_value, lfy_value, lfz_value, lb_value, fnt_value, fnc_value, fcx_value, fcy_value, mfx_value, mfy_value, 1.1, 1.1, 77000000000,200000000000,1]
             transformed_list_perfil_data.extend(values_to_append)
 
             print(f"Dados do perfil e input = {transformed_list_perfil_data}")
@@ -236,7 +240,7 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.box_steel_type.widgets_add(self.box_steel_selection_select_menu,  0,False) # adiciona a static box de selecao ao sizer principal
         steel_type = self.data_steel_type.return_value_by_one_col("Tipo")
         #adiciona o select menu dentro do steel type
-        self.select_steel_type_menu = wx.ComboBox(self.box_steel_selection_select_menu, id = wx.ID_ANY, style = wx.CB_READONLY,choices = steel_type, value = steel_type[0] )
+        self.select_steel_type_menu = wx.ComboBox(self.box_steel_selection_select_menu, id = wx.ID_ANY, style = wx.CB_READONLY,choices = steel_type, value = steel_type[1] )
         self.box_steel_selection_select_menu.widgets_add(self.select_steel_type_menu,0, False)
         self.btn_ok = wx.Button(self.box_steel_selection_select_menu, label="Ok")
         self.box_steel_selection_select_menu.widgets_add(self.btn_ok, 0, False)
@@ -244,13 +248,13 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.btn_edit = wx.Button(self.box_steel_selection_select_menu, label="Editar")
         self.box_steel_selection_select_menu.widgets_add(self.btn_edit, 0, False)
         self.btn_edit.Bind(wx.EVT_BUTTON, load_edit_child_frame)
-        self.label_fy = wx.StaticText(self.box_steel_selection_select_menu,id=wx.ID_ANY, label="fy (Mpa)")
+        self.label_fy = wx.StaticText(self.box_steel_selection_select_menu,id=wx.ID_ANY, label="fy (MPa)")
         self.box_steel_selection_select_menu.widgets_add(self.label_fy, 0, False)
         self.text_fy = TextBoxVrf(self.box_steel_selection_select_menu, value = "0", only_numeric=False)
         self.box_steel_selection_select_menu.widgets_add(self.text_fy, 0, False)
         #quebra de linha vertical
         self.box_steel_selection_select_menu.widgets_add(wx.StaticLine(self.box_steel_selection_select_menu, style=wx.LI_VERTICAL), 0,False)
-        self.label_fu = wx.StaticText(self.box_steel_selection_select_menu,id=wx.ID_ANY, label="fu (Mpa)")
+        self.label_fu = wx.StaticText(self.box_steel_selection_select_menu,id=wx.ID_ANY, label="fu (MPa)")
         self.box_steel_selection_select_menu.widgets_add(self.label_fu, 0, False)
         self.text_fu = TextBoxVrf(self.box_steel_selection_select_menu, value = "0", only_numeric=False)
         self.box_steel_selection_select_menu.widgets_add(self.text_fu, 0,False)
@@ -300,7 +304,7 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.box_perfil_data.widgets_add(self.w_x_text, 0, False)
         self.r_x_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="rx (cm) : ")
         self.box_perfil_data.widgets_add(self.r_x_text, 0, False)
-        self.z_x_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="zx (cm) : ")
+        self.z_x_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="zx (cm³) : ")
         self.box_perfil_data.widgets_add(self.z_x_text, 0, False)
         self.i_y_text = wx.StaticText(self.box_perfil_data, id=wx.ID_ANY, label="Iy (cm^4) : ")
         self.box_perfil_data.widgets_add(self.i_y_text, 0, False)
@@ -329,19 +333,19 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.box_values_input.widgets_add(self.box_lengths,0, False)
         self.text_lfx = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Lx (m) :")
         self.box_lengths.widgets_add(self.text_lfx, 0, False)
-        self.input_lfx = TextBoxVrf(self.box_lengths, value = "0", only_numeric=True)
+        self.input_lfx = TextBoxVrf(self.box_lengths, value = "1", only_numeric=True)
         self.box_lengths.widgets_add(self.input_lfx, 1,False)
         self.text_lfy = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Ly (m) :")
         self.box_lengths.widgets_add(self.text_lfy, 0, False)
-        self.input_lfy = TextBoxVrf(self.box_lengths, value = "0", only_numeric=True)
+        self.input_lfy = TextBoxVrf(self.box_lengths, value = "1", only_numeric=True)
         self.box_lengths.widgets_add(self.input_lfy, 1,False)
         self.text_lz = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Lz (m) :")
         self.box_lengths.widgets_add(self.text_lz, 0, False)
-        self.input_lfz = TextBoxVrf(self.box_lengths,  value = "0", only_numeric=True)
+        self.input_lfz = TextBoxVrf(self.box_lengths,  value = "1", only_numeric=True)
         self.box_lengths.widgets_add(self.input_lfz, 1,False)
         self.text_lf = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Lf (m) :")
         self.box_lengths.widgets_add(self.text_lf, 0, False)
-        self.input_lfb = TextBoxVrf(self.box_lengths,  value = "0", only_numeric=True)
+        self.input_lfb = TextBoxVrf(self.box_lengths,  value = "1", only_numeric=True)
         self.box_lengths.widgets_add(self.input_lfb, 1,False)
         self.text_values_cfg = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Variáveis :")
         self.box_lengths.widgets_add(self.text_values_cfg, 0, False)
@@ -351,32 +355,36 @@ class SteelChildFrame(wx.MDIChildFrame):
         #valores dos esforcos
         self.box_load_solicitation = StaticBox(self.box_values_input, "Solicitações", orientation= "grid")
         self.box_values_input.widgets_add(self.box_load_solicitation, 0, False)
-        self.text_fnx = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Normal X (KN) :")
-        self.box_load_solicitation.widgets_add(self.text_fnx, 0, False)
-        self.input_fnx = TextBoxVrf(self.box_load_solicitation, value = "0", only_numeric=True)
-        self.box_load_solicitation.widgets_add(self.input_fnx, 1, False)
-        self.text_fny = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Normal Y (KN) :")
-        self.box_load_solicitation.widgets_add(self.text_fny, 0, False)
-        self.input_fny = TextBoxVrf(self.box_load_solicitation, value = "0", only_numeric=True)
-        self.box_load_solicitation.widgets_add(self.input_fny, 1, False)
-        self.text_fc = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Cortante (KN) :")
-        self.box_load_solicitation.widgets_add(self.text_fc, 0,  False)
-        self.input_fc = TextBoxVrf(self.box_load_solicitation, value = "0",only_numeric=True)
-        self.box_load_solicitation.widgets_add(self.input_fc, 1, False)
+        self.text_fnt = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Normal tração (KN) :")
+        self.box_load_solicitation.widgets_add(self.text_fnt, 0, False)
+        self.input_fnt = TextBoxVrf(self.box_load_solicitation, value = "1", only_numeric=True)
+        self.box_load_solicitation.widgets_add(self.input_fnt, 1, False)
+        self.text_fnc = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Normal compressão (KN) :")
+        self.box_load_solicitation.widgets_add(self.text_fnc, 0, False)
+        self.input_fnc = TextBoxVrf(self.box_load_solicitation, value = "1", only_numeric=True)
+        self.box_load_solicitation.widgets_add(self.input_fnc, 1, False)
+        self.text_fcx = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Cortante X (KN) :")
+        self.box_load_solicitation.widgets_add(self.text_fcx, 0, False)
+        self.input_fcx = TextBoxVrf(self.box_load_solicitation, value = "1", only_numeric=True)
+        self.box_load_solicitation.widgets_add(self.input_fcx, 1, False)
+        self.text_fcy = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Cortante Y (KN) :")
+        self.box_load_solicitation.widgets_add(self.text_fcy, 0,  False)
+        self.input_fcy = TextBoxVrf(self.box_load_solicitation, value = "1",only_numeric=True)
+        self.box_load_solicitation.widgets_add(self.input_fcy, 1, False)
         self.text_mx = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Momento X (Kn*m) :")
         self.box_load_solicitation.widgets_add(self.text_mx, 0, False)
-        self.input_mx = TextBoxVrf(self.box_load_solicitation, value = "0",only_numeric=True)
+        self.input_mx = TextBoxVrf(self.box_load_solicitation, value = "1",only_numeric=True)
         self.box_load_solicitation.widgets_add(self.input_mx, 1, False)
         self.text_my = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Momento Y (Kn*m) :")
         self.box_load_solicitation.widgets_add(self.text_my, 0, False)
-        self.input_my = TextBoxVrf(self.box_load_solicitation, value = "0",only_numeric=True)
+        self.input_my = TextBoxVrf(self.box_load_solicitation, value = "1",only_numeric=True)
         self.box_load_solicitation.widgets_add(self.input_my, 1, False)
         #------------------------------------------------- #dicionario de variaveis
         label_and_object = {"Massa Linear kg/m": self.linear_mass_text, "d (mm) : ": self.d_text,
                             "bf (mm) : ": self.bf_text, "tw (mm) : ": self.tw_text, "tf (mm) : ": self.tf_text,
                             "h (mm) : ": self.h_text, "d' (mm) : ": self.d_l_text, "Área (cm²) : ": self.area_text,
                             "Ix (cm^4) : ": self.i_x_text, "Wx (cm³) : ": self.w_x_text,
-                            "rx (cm) : ": self.r_x_text, "zx (cm) : ": self.z_x_text, "Iy (cm^4) : ": self.i_y_text,
+                            "rx (cm) : ": self.r_x_text, "zx (cm³) : ": self.z_x_text, "Iy (cm^4) : ": self.i_y_text,
                             "Wy (cm³) : ": self.w_y_text, "ry (cm) : ": self.r_y_text,
                             "zy (cm³) : ": self.z_y_text, "rt (cm) : ": self.r_t_text,
                             "It (cm^4) : ": self.i_t_text, "Mesa bf/2.tf : ": self.bf_two_text,
