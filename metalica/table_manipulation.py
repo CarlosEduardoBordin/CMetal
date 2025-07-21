@@ -1,4 +1,3 @@
-#from encodings.punycode import selective_find
 import wx
 import pandas as pd
 import os
