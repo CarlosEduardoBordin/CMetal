@@ -1,33 +1,46 @@
 import wx
-import os
-from pylatex import Document, Section, Math
+import platform
+import uuid
+from datetime import datetime
+from pylatex import Document, Command
 from pylatex.utils import NoEscape
 
+
 class ReportGenerator:
-    def __init__(self, file_name):
+    def __init__(self, file_name, path):
+        # self.frame_name = frame_name
         self.file_name = file_name
+        self.path = path
         geometria = {
             "tmargin": "2cm",
             "lmargin": "2cm"
         }
         self.doc = Document(self.file_name, geometry_options=geometria)
-        self.doc.preamble.append(NoEscape(r'\usepackage[dvipsnames]{xcolor}'))# tem que colocar isso para gerar o texto com cor !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        self.doc.preamble.append(NoEscape(r'\date{\today}'))# pega a data da geracao
-        self.doc.preamble.append(NoEscape(r'\onehalfspacing'))
-        self.doc.append(NoEscape(r'\maketitle')) #cria o titulo
+        self.doc.preamble.append(NoEscape(r"\usepackage[dvipsnames]{xcolor}"))
+        self.doc.preamble.append(NoEscape(r"\usepackage{parskip}"))  # Pacote para espaço sem indentação
+        apend_titulo = self.file_name # colocar o titulo ou pedir ele?
+        self.doc.preamble.append(Command("title", "Memória de cálculo - " + apend_titulo))
+        system_name, system_version, hwid = platform.system(), platform.version(), str(uuid.getnode()) #str(uuid.getnode()) pega o MAC
+        self.doc.preamble.append(Command("author", f"Sistema: {system_name}, versão: {system_version}, ID: {hwid}")) # Opcional, mas bom ter
+        data_geracao = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        self.doc.preamble.append(Command("date", NoEscape(fr"Data de geração: {data_geracao}")))
 
-
+    def make_title(self):
+        self.doc.append(NoEscape(r"\maketitle"))
 
     def add_section(self, title):
         #adicionar titulo a secao
-        self.doc.append(NoEscape(r'\section*{' + title + '}'))
+        self.doc.append(NoEscape(r"\section*{" + title + "}"))
 
     def add_paragraph(self, text):
-        #adicionar titulo a secao
-        self.doc.append(text)
+        self.doc.append(NoEscape(r"\noindent " + text + r" \par"))
 
     def add_formula(self, formula_text):
-        formula_formatada = NoEscape(r'\hspace{' + "1em" + r'} $' + formula_text + r'$ \\')
+        formula_formatada = NoEscape(
+            r"\begin{flushleft}" +
+            r"$$" + formula_text + r"$$" +
+            r"\end{flushleft}"
+        )
         self.doc.append(formula_formatada)
 
     def add_calculo(self, dicionario_de_informacoes):
@@ -40,12 +53,11 @@ class ReportGenerator:
 
     def gerar_pdf(self):
         try:
-            self.doc.generate_pdf(compiler='pdflatex', clean_tex=False)
-            print(f"PDF '{self.file_name}.pdf' gerado com sucesso!")
+            self.doc.generate_pdf(self.path, clean_tex=False, compiler="pdflatex")
+            # self.doc.generate_pdf(self.path, compiler="pdflatex", clean_tex=True)
         except Exception as e:
-            print(
-                f"Ocorreu um erro ao gerar o PDF. Verifique se sua instalação do LaTeX (MiKTeX, etc.) está funcionando corretamente.")
-            print(f"Erro: {e}")
+            wx.MessageBox(f"Ocorreu um erro ao salvar {e}", "Erro", wx.YES_NO | wx.NO_DEFAULT | wx.ICON_ERROR)
+
 
 
 

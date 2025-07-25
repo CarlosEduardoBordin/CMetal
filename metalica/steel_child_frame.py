@@ -1,10 +1,8 @@
-import os.path
 import wx
 import wx.adv
 import re #biblioteca de expressoes
 from metalica.edit_child_frame import EditChildFrame
-from metalica.widget_class import StaticBox
-from metalica.widget_class import TextBoxVrf
+from widget_class import StaticBox , TextBoxVrf, SaveBox
 from metalica.table_manipulation import ReadExcelFile
 from metalica.matplot_img_draw import DrawBeam
 from metalica.verification_process import VerificationProcess
@@ -12,7 +10,6 @@ from metalica.help_steel_child_frame import ImgHelpButton
 from metalica.values_config_child_frame import ValuesConfiguration
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 
-from typing import Dict, Any # para mudar os valores da selecao
 
 #() tupla [] lista {} dicionario
 #criando o frame filho
@@ -20,7 +17,7 @@ class SteelChildFrame(wx.MDIChildFrame):
     def __init__(self, parent, frame_name):
         #parametros iniciais da janela
         super().__init__(parent, id=wx.ID_ANY, title = frame_name,
-                         pos=(0,0), size = (800,700), style = wx.DEFAULT_FRAME_STYLE)
+                         pos=(0,0), size = (800,740), style = wx.DEFAULT_FRAME_STYLE)
         self.parent = parent #atributo parente da janela
         #------------------------------------------------funcoes dos botoes
         self.data_steel_type = ReadExcelFile("steel.xlsx","tipo_de_aco")
@@ -46,9 +43,9 @@ class SteelChildFrame(wx.MDIChildFrame):
 
         def unit_converter(value: float, from_unit: str, to_unit: str, conversion_factor_dict: dict) -> float:
             if from_unit not in conversion_factor_dict:
-                raise ValueError(f"Unidade de origem '{from_unit}' não reconhecida.")
+                raise ValueError(f"Unidade de origem {from_unit} não reconhecida.")
             if to_unit not in conversion_factor_dict:
-                raise ValueError(f"Unidade de destino '{to_unit}' não reconhecida.")
+                raise ValueError(f"Unidade de destino {to_unit} não reconhecida.")
 
             # Converter para unidade base (multiplicador = 1), depois para unidade de destino
             value_in_base = value * conversion_factor_dict[from_unit]
@@ -58,10 +55,9 @@ class SteelChildFrame(wx.MDIChildFrame):
 
         def unit_extractor(text_for_extratiction):
             #acha a unidade de dentro do texto entre ()
-            match = re.search(r'\((.*?)\)', text_for_extratiction)
+            match = re.search(r"\((.*?)\)", text_for_extratiction)
             if match:
                 return match.group(1)
-
            #se nao achar pega a ultima palavra - ver se funciona
             parts = text_for_extratiction.strip().split()
             if parts:
@@ -73,32 +69,16 @@ class SteelChildFrame(wx.MDIChildFrame):
         def on_activate_window(event):
             #quando o evento esta ativo
             if event.GetActive():
-                self.text_lfx.SetLabel(f"Lfx ({self.parent.get_unit_lenght()}) :")
-                self.text_lfy.SetLabel(f"Lfy ({self.parent.get_unit_lenght()}) :")
-                self.text_lz.SetLabel(f"Lfz ({self.parent.get_unit_lenght()}) :")
-                self.text_fnc.SetLabel(f"Normal compressão ({self.parent.get_unit_force()}) :")
-                self.text_fnt.SetLabel(f"Normal tração ({self.parent.get_unit_force()}) :")
-                self.text_fcx.SetLabel(f"Cortante X ({self.parent.get_unit_force()}) :")
-                self.text_fcy.SetLabel(f"Cortante Y ({self.parent.get_unit_force()}) :")
-                self.text_mx.SetLabel(f"Momento X ({self.parent.get_unit_moment()}) :")
-                self.text_my.SetLabel(f"Momento Y ({self.parent.get_unit_moment()}) :")
-                # Transformar o valor do fu e fy
-
-                #verificar como fazer a conversao pra nao bugar
-                # self.label_fy.SetLabel(f"fy ({self.parent.get_unit_press()})")
-                # self.label_fu.SetLabel(f"fu ({self.parent.get_unit_press()})")
-                #
-                #
-                # if self.text_fy.get_value() and self.text_fu  !=0 :
-                #     fy, fu  = self.text_fy.get_value(), self.text_fu.get_value()
-                #     fy_converted = unit_converter(float(fy), parent.get_unit_press(), self.factor_multiplier_press)
-                #     print(f"fy_converted = {fy_converted}")
-                #     self.text_fy.SetValue(str(fy_converted))
-                #     self.label_fy.SetLabel(f"fy ({self.parent.get_unit_press()})")
-                #     fu_converted = unit_converter(fu, parent.get_unit_press(), self.factor_multiplier_press)
-                #     # print(f"fu_converted = {fu_converted}")
-                #     self.text_fu.SetValue(str(fu_converted))
-
+                self.text_lfx.SetLabel(f"Lfx ({self.parent.get_unit_lenght()[0]}) :")
+                self.text_lfy.SetLabel(f"Lfy ({self.parent.get_unit_lenght()[0]}) :")
+                self.text_lz.SetLabel(f"Lfz ({self.parent.get_unit_lenght()[0]}) :")
+                self.text_lf.SetLabel(f"Lf ({self.parent.get_unit_lenght()[0]}) :")
+                self.text_fnc.SetLabel(f"Normal compressão ({self.parent.get_unit_force()[0]}) :")
+                self.text_fnt.SetLabel(f"Normal tração ({self.parent.get_unit_force()[0]}) :")
+                self.text_fcx.SetLabel(f"Cortante X ({self.parent.get_unit_force()[0]}) :")
+                self.text_fcy.SetLabel(f"Cortante Y ({self.parent.get_unit_force()[0]}) :")
+                self.text_mx.SetLabel(f"Momento X ({self.parent.get_unit_moment()[0]}) :")
+                self.text_my.SetLabel(f"Momento Y ({self.parent.get_unit_moment()[0]}) :")
 
             event.Skip()
         self.Bind(wx.EVT_ACTIVATE, on_activate_window)
@@ -116,11 +96,9 @@ class SteelChildFrame(wx.MDIChildFrame):
             edit_child.Show()
             # lista de valores ja tirados do excel e ja definidos nos rotulos
         def on_select_perfil(event):
-
             text_values = label_and_object.keys()
             option_selected = self.select_steel_perfil.GetStringSelection()
             return_values_dimension = self.data_steel_lmn.get_name_and_return_col_value("BITOLA mm x kg/mgraus",f"{option_selected}",text_values)
-
             for name_col, value  in return_values_dimension.items():
                 label = str(name_col) + " " + str(value)
                 if name_col in label_and_object.keys():
@@ -209,24 +187,17 @@ class SteelChildFrame(wx.MDIChildFrame):
                 transformed_list_perfil_data.extend([value_converted])
                 i += 1
             print(transformed_list_perfil_data)
-
-
             values_to_append = [float(fy)*10**6, float(fu)*10**6, lfx_value, lfy_value, lfz_value, lb_value, fnt_value, fnc_value, fcx_value, fcy_value, mfx_value, mfy_value, 1.1, 1.1, 77000000000,200000000000,1]
             transformed_list_perfil_data.extend(values_to_append)
 
-            print(f"Dados do perfil e input = {transformed_list_perfil_data}")
-            self.data = VerificationProcess(*transformed_list_perfil_data)
+
+            self.save_dialog = SaveBox(self.parent) #abrir o dialogo de salvar
+            path = self.save_dialog.get_path()
+            self.save_dialog.Destroy()
+            print(f"{path}")
+            self.data = VerificationProcess(*transformed_list_perfil_data,frame_name, path)
             self.data.calculate()
 
-            #     def __init__(self, linear_mass_text, d_text, bf_text, tw_text, tf_text, h_text, d_l_text, area_text, i_x_text, w_x_text, r_x_text,
-            #                  z_x_text, i_y_text, w_y_text, r_y_text, z_y_text, r_t_text, i_t_text, bf_two_text, d_tw_text, cw_text, u_text, fy, fu, lfx, lfy, lfz,
-            #                  flb, fn, fc, mfx, mfy, y_um, y_dois, e, cb):
-
-            verificate_init_values = ()
-            # print(f"valor get_unit_force = {parent.get_unit_force()}")
-            # print(f"valor factor_multiplier_force = {self.factor_multiplier_force}")
-            # fn_em_n = unit_converter(fn_value, parent.get_unit_force(), self.factor_multiplier_force)
-            # print(f"Valor em N = {fn_em_n}")
 
         #------------------------------------------------
          # self.window_main_panel = wx.Panel(self) #cria o painel para por os objetos -> mudar para scroll notebook 720p nao aparece a janela inteira!

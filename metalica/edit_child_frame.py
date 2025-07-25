@@ -2,8 +2,7 @@ import wx
 import wx.grid
 import os
 from itertools import product # para 2 for dentro de 1 linha
-from wx.lib.sized_controls import border
-from metalica.widget_class import StaticBox
+from widget_class import StaticBox
 from metalica.table_manipulation import ReadExcelFile
 from metalica.table_manipulation import WriteExcelFile
 

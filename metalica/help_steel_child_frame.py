@@ -1,7 +1,7 @@
 import wx
 import wx.grid
 import os
-from metalica.widget_class import StaticBox
+from widget_class import StaticBox
 
 
 class ImgHelpButton(wx.MDIChildFrame):

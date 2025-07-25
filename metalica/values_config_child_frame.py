@@ -1,6 +1,6 @@
 import wx
-from metalica.widget_class import StaticBox
-from metalica.widget_class import TextBoxVrf
+from widget_class import StaticBox
+from widget_class import TextBoxVrf
 
 
 class ValuesConfiguration(wx.MDIChildFrame):
