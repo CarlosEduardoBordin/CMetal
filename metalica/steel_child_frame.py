@@ -2,29 +2,32 @@ import wx
 import wx.adv
 import re #biblioteca de expressoes
 from pint import UnitRegistry
-import pint
 from metalica.edit_child_frame import EditChildFrame
 from widget_class import StaticBox , TextBoxVrf, SaveBox
-from metalica.table_manipulation import ReadExcelFile
+from table_manipulation import ReadExcelFile
 from metalica.matplot_img_draw import DrawBeam
-from metalica.verification_process import VerificationProcess
 from metalica.help_steel_child_frame import ImgHelpButton
-from metalica.values_config_child_frame import ValuesConfiguration
+from metalica.cb_child_frame import CBValuesConfiguration
+from metalica.aef_child_frame import AefValuesConfiguration
+from metalica.verification_process import VerificationProcess
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 
 
 #() tupla [] lista {} dicionario
 #criando o frame filho
 class SteelChildFrame(wx.MDIChildFrame):
+
     def __init__(self, parent, frame_name):
         #parametros iniciais da janela
         super().__init__(parent, id=wx.ID_ANY, title = frame_name,
                          pos=(0,0), size = (800,740), style = wx.DEFAULT_FRAME_STYLE)
-        self.parent = parent #atributo parente da janela
+        self.parent = self.GetParent() #atributo parente da janela
         #------------------------------------------------funcoes dos botoes
         self.data_steel_type = ReadExcelFile("steel.xlsx","tipo_de_aco")
         self.data_steel_lmn = ReadExcelFile("steel.xlsx","laminado")
 
+        self.cb = 1
+        self.aef = None
 
         # **************************************************************************************** SUM sistema de unidade de medida
         #trabalhando em m, KN, Pa para realizar o calculo final!
@@ -37,6 +40,9 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.factor_multiplier_force = {"N", "kN", "MN"}
         self.factor_multiplier_moment = {"N*m", "KN*m", "MN*m"}
         self.factor_multiplier_press = {"Pa", "kPa", "MPa", "GPa"}
+
+
+        # self.Bind(wx.EVT_CLOSE, self.on_close_steel_child)
 
         # def unit_converter(value, origin_unit, conversion_factor_dict) -> float: #converter para float
         #     #converte usando um dicionario
@@ -77,20 +83,29 @@ class SteelChildFrame(wx.MDIChildFrame):
 
         # funcao para quando a janela estiver ativa ela atualizar automaticamente verificar como fazer para as unidades ja colocadas
         def on_activate_window(event):
-            # #quando o evento esta ativo
-            if event.GetActive():
-                self.text_lfx.SetLabel(f"Lfx ({self.parent.get_unit_lenght()[0]}) :")
-                self.text_lfy.SetLabel(f"Lfy ({self.parent.get_unit_lenght()[0]}) :")
-                self.text_lz.SetLabel(f"Lfz ({self.parent.get_unit_lenght()[0]}) :")
-                self.text_lf.SetLabel(f"Lf ({self.parent.get_unit_lenght()[0]}) :")
-                self.text_fnc.SetLabel(f"Normal compressão ({self.parent.get_unit_force()[0]}) :")
-                self.text_fnt.SetLabel(f"Normal tração ({self.parent.get_unit_force()[0]}) :")
-                self.text_fcx.SetLabel(f"Cortante X ({self.parent.get_unit_force()[0]}) :")
-                self.text_fcy.SetLabel(f"Cortante Y ({self.parent.get_unit_force()[0]}) :")
-                self.text_mx.SetLabel(f"Momento X ({self.parent.get_unit_moment()[0]}) :")
-                self.text_my.SetLabel(f"Momento Y ({self.parent.get_unit_moment()[0]}) :")
+          try:
+              # #quando o evento esta ativo
+              self.label_name = self.label_fu.GetLabel()
+              if event.GetActive():
+                  self.label_fu.SetLabel(f"fu ({self.parent.get_unit_press()[0]}) :")
+                  self.label_fy.SetLabel(f"fy ({self.parent.get_unit_press()[0]}) :")
+                  if self.label_fu.GetLabel() != self.label_name:
+                      self.text_fu.SetValue("")
+                      self.text_fy.SetValue("")
+                  self.text_lfx.SetLabel(f"Lfx ({self.parent.get_unit_lenght()[0]}) :")
+                  self.text_lfy.SetLabel(f"Lfy ({self.parent.get_unit_lenght()[0]}) :")
+                  self.text_lz.SetLabel(f"Lfz ({self.parent.get_unit_lenght()[0]}) :")
+                  self.text_lf.SetLabel(f"Lf ({self.parent.get_unit_lenght()[0]}) :")
+                  self.text_fnc.SetLabel(f"Normal compressão ({self.parent.get_unit_force()[0]}) :")
+                  self.text_fnt.SetLabel(f"Normal tração ({self.parent.get_unit_force()[0]}) :")
+                  self.text_fcx.SetLabel(f"Cortante X ({self.parent.get_unit_force()[0]}) :")
+                  self.text_fcy.SetLabel(f"Cortante Y ({self.parent.get_unit_force()[0]}) :")
+                  self.text_mx.SetLabel(f"Momento X ({self.parent.get_unit_moment()[0]}) :")
+                  self.text_my.SetLabel(f"Momento Y ({self.parent.get_unit_moment()[0]}) :")
 
-            event.Skip()
+              event.Skip()
+          except RuntimeError:
+              pass
         self.Bind(wx.EVT_ACTIVATE, on_activate_window)
         # ****************************************************************************************************************
 
@@ -99,8 +114,14 @@ class SteelChildFrame(wx.MDIChildFrame):
             selected_item = self.select_steel_type_menu.GetValue()
             fy_fu = self.data_steel_type.get_name_and_return_col_value("Tipo",f"{selected_item}",["fy", "fu"])
             fy, fu = float(fy_fu["fy"]), float(fy_fu["fu"]) #mudar aqui
-            self.text_fy.SetValue(str(fy))
-            self.text_fu.SetValue(str(fu))
+
+            fy = fy * ureg.MPa
+            fy_convertido = fy.to(parent.get_unit_press()[0]).magnitude
+            fu = fu * ureg.MPa
+            fu_convertido = fu.to(parent.get_unit_press()[0]).magnitude
+
+            self.text_fy.SetValue(str(fy_convertido))
+            self.text_fu.SetValue(str(fu_convertido))
         def load_edit_child_frame(event):
             edit_child = EditChildFrame(self.parent,"Editor")
             edit_child.Show()
@@ -113,7 +134,7 @@ class SteelChildFrame(wx.MDIChildFrame):
                 label = str(name_col) + " " + str(value)
                 if name_col in label_and_object.keys():
                     label = label_and_object[name_col]
-                    novo_texto = f"{label.GetLabel().split(':')[0]}: {value}"
+                    novo_texto = f"{label.GetLabel().split(":")[0]}: {value}"
                     if label.GetLabel() != novo_texto:
                         label.SetLabel(novo_texto)
                 self.Layout()
@@ -126,17 +147,23 @@ class SteelChildFrame(wx.MDIChildFrame):
         def on_help_button_img(event):
             help_frame = ImgHelpButton(self.parent,"Ajuda")
             help_frame.Show()
-        def on_values_cfg(event):
-            values_cfg = ValuesConfiguration(self.parent,"Configurar as variáveis")
-            values_cfg.Show()
-        def on_calculate(event):
+        def on_cb(event):
+            cb = CBValuesConfiguration(self,f"Fator de modificação para diagrama de momento fletor não uniforme Cb - {frame_name}")
+            cb.Show()
+        def on_aef(event):
+            aef = AefValuesConfiguration(self,
+                                       f"Área líquida efetiva Aef - {frame_name}")
+            aef.Show()
 
-            fy = self.text_fy.get_value()
-            # fy = unit_converter_dois(self.text_fy.get_value(), "MPa",
-            #                                 parent.get_unit_press()[0])
-            fu = self.text_fu.get_value()
-            # fy = unit_converter_dois(self.text_fu.get_value(), "MPa",
-            #                                 parent.get_unit_press()[0])
+        def on_teste(event):
+            teste = self.parent.get_cb()
+            print(teste)
+        def on_calculate(event):
+            fy = float(self.text_fy.get_value())
+            fu = float(self.text_fu.get_value())
+            e = float(parent.get_e_modulo())
+            g = float(parent.get_g_modulo())
+            y_um = float(parent.get_y_um())
             lfx_value = unit_converter_dois(self.input_lfx.get_value(), parent.get_unit_lenght()[0],parent.get_unit_lenght()[0])
             lfy_value = unit_converter_dois(self.input_lfy.get_value(), parent.get_unit_lenght()[0], parent.get_unit_lenght()[0])
             lfz_value = unit_converter_dois(self.input_lfz.get_value(), parent.get_unit_lenght()[0], parent.get_unit_lenght()[0])
@@ -147,7 +174,6 @@ class SteelChildFrame(wx.MDIChildFrame):
             fcy_value = unit_converter_dois(self.input_fcy.get_value(), parent.get_unit_force()[0], parent.get_unit_force()[0])
             mfx_value = unit_converter_dois(self.input_mx.get_value(), parent.get_unit_moment()[0], parent.get_unit_moment()[0])
             mfy_value = unit_converter_dois(self.input_my.get_value(), parent.get_unit_moment()[0], parent.get_unit_moment()[0])
-
             #pegando dados do perfil
             text_values = label_and_object.keys()
             option_selected = self.select_steel_perfil.GetStringSelection()
@@ -156,10 +182,8 @@ class SteelChildFrame(wx.MDIChildFrame):
                                                                                         f"{option_selected}",
                                                                                         text_values)
             value_list_perfil = list(return_values_dimension.values())
-
             transformed_list_perfil_data = []
             i = 0
-
             for unit, value_adress in label_and_object.items():
                 search_unit = unit_extractor(unit)
                 value_converted = 0
@@ -171,7 +195,6 @@ class SteelChildFrame(wx.MDIChildFrame):
                     value_converted = unit_converter_dois(value_list_perfil[i], search_unit, parent.get_unit_volume()[0])
                 elif search_unit in self.factor_multiplier_inertia:
                     value_converted = unit_converter_dois(value_list_perfil[i], search_unit, parent.get_unit_inercia()[0])
-
                 elif search_unit in self.factor_multiplier_six_elevated:
                     value_converted = unit_converter_dois(value_list_perfil[i], search_unit, parent.get_unit_six()[0])
                 else:
@@ -181,18 +204,17 @@ class SteelChildFrame(wx.MDIChildFrame):
                 i += 1
                 print(f"Unidade : {unit} , valor: {value_adress} , para  {value_converted}")
 
-
-            # print(transformed_list_perfil_data)
-            # values_to_append = [float(fy)*10**6, float(fu)*10**6, lfx_value, lfy_value, lfz_value, lb_value, fnt_value, fnc_value, fcx_value, fcy_value, mfx_value, mfy_value, 1.1, 1.1, 77000000000,200000000000,1]
-            # transformed_list_perfil_data.extend(values_to_append)
-            #
-            #
-            # self.save_dialog = SaveBox(self.parent) #abrir o dialogo de salvar
-            # path = self.save_dialog.get_path()
-            # self.save_dialog.Destroy()
-            # print(f"{path}")
-            # self.data = VerificationProcess(*transformed_list_perfil_data,frame_name, path)
-            # self.data.calculate()
+            print(transformed_list_perfil_data)
+            values_to_append = [fy, fu, lfx_value, lfy_value, lfz_value, lb_value, fnt_value,
+                                fnc_value, fcx_value, fcy_value, mfx_value, mfy_value,
+                                y_um, g, e,1]
+            transformed_list_perfil_data.extend(values_to_append)
+            self.save_dialog = SaveBox(self.parent) #abrir o dialogo de salvar
+            path = self.save_dialog.get_path()
+            self.save_dialog.Destroy()
+            print(f"{path}")
+            self.data = VerificationProcess(*transformed_list_perfil_data,frame_name, path)
+            self.data.calculate()
 
 
         #------------------------------------------------
@@ -217,13 +239,13 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.btn_edit.Bind(wx.EVT_BUTTON, load_edit_child_frame)
         self.label_fy = wx.StaticText(self.box_steel_selection_select_menu,id=wx.ID_ANY, label="fy (MPa)")
         self.box_steel_selection_select_menu.widgets_add(self.label_fy, 0, False)
-        self.text_fy = TextBoxVrf(self.box_steel_selection_select_menu, value = "0", only_numeric=False)
+        self.text_fy = TextBoxVrf(self.box_steel_selection_select_menu, value = "0", only_numeric=True)
         self.box_steel_selection_select_menu.widgets_add(self.text_fy, 0, False)
         #quebra de linha vertical
         self.box_steel_selection_select_menu.widgets_add(wx.StaticLine(self.box_steel_selection_select_menu, style=wx.LI_VERTICAL), 0,False)
         self.label_fu = wx.StaticText(self.box_steel_selection_select_menu,id=wx.ID_ANY, label="fu (MPa)")
         self.box_steel_selection_select_menu.widgets_add(self.label_fu, 0, False)
-        self.text_fu = TextBoxVrf(self.box_steel_selection_select_menu, value = "0", only_numeric=False)
+        self.text_fu = TextBoxVrf(self.box_steel_selection_select_menu, value = "0", only_numeric=True)
         self.box_steel_selection_select_menu.widgets_add(self.text_fu, 0,False)
         #------------------------------------------------- selecao do perfil
         self.box_perfil = StaticBox(self.window_main_panel, "Escolha do perfil", orientation="horizontal")
@@ -296,7 +318,7 @@ class SteelChildFrame(wx.MDIChildFrame):
         #------------------------------------------------- box valores
         self.box_values_input = StaticBox(self.window_main_panel,"Verificação", orientation = "horizontal")
         #comprimentos de flambagem
-        self.box_lengths = StaticBox(self.box_values_input, "Comprimentos do elemento", orientation= "grid")
+        self.box_lengths = StaticBox(self.box_values_input, "Informações do elemento", orientation= "grid")
         self.box_values_input.widgets_add(self.box_lengths,0, False)
         self.text_lfx = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Lx (m) :")
         self.box_lengths.widgets_add(self.text_lfx, 0, False)
@@ -314,11 +336,23 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.box_lengths.widgets_add(self.text_lf, 0, False)
         self.input_lfb = TextBoxVrf(self.box_lengths,  value = "1", only_numeric=True)
         self.box_lengths.widgets_add(self.input_lfb, 1,False)
-        self.text_values_cfg = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Variáveis :")
-        self.box_lengths.widgets_add(self.text_values_cfg, 0, False)
-        self.button_cfg_values = wx.Button(self.box_lengths, label = "Configurar")
-        self.box_lengths.widgets_add(self.button_cfg_values, 1,  False)
-        self.button_cfg_values.Bind(wx.EVT_BUTTON, on_values_cfg)
+        self.text_values_cfg_cb = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Coeficiente :")
+        self.box_lengths.widgets_add(self.text_values_cfg_cb, 0, False)
+        self.button_cb = wx.Button(self.box_lengths, label = "Cb")
+        self.box_lengths.widgets_add(self.button_cb, 1,  False)
+        self.button_cb.Bind(wx.EVT_BUTTON, on_cb)
+        self.text_values_cfg_aef = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Área efetiva :")
+        self.box_lengths.widgets_add(self.text_values_cfg_aef, 0, False)
+        self.button_aef = wx.Button(self.box_lengths, label = "Aef")
+        self.box_lengths.widgets_add(self.button_aef, 1,  False)
+        self.button_aef.Bind(wx.EVT_BUTTON, on_aef)
+
+        self.awdawd = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Área efetiva :")
+        self.box_lengths.widgets_add(self.awdawd, 0, False)
+        self.button_teste = wx.Button(self.box_lengths, label = "Aef")
+        self.box_lengths.widgets_add(self.button_teste, 1,  False)
+        self.button_teste.Bind(wx.EVT_BUTTON, on_teste)
+
         #valores dos esforcos
         self.box_load_solicitation = StaticBox(self.box_values_input, "Solicitações", orientation= "grid")
         self.box_values_input.widgets_add(self.box_load_solicitation, 0, False)
@@ -388,6 +422,18 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.main_sizer.Add(self.box_steel_type,proportion =  0, flag = wx.ALL | wx.EXPAND, border = 5) #adiciona o primeiro staticbox ao sizer principal da janela
         self.main_sizer.Add(self.box_perfil, proportion = 0, flag = wx.ALL | wx.EXPAND, border = 5) # adiciona o escolha do perfil
         self.main_sizer.Add(self.box_values_input, proportion = 0, flag = wx.ALL | wx.EXPAND, border = 5) #adiciona o insercao de valores
-
-
         self.window_main_panel.SetSizer(self.main_sizer)
+
+    def set_cb(self, unit):
+        self.cb = unit
+
+    def get_cb(self):
+        return self.cb
+
+    def set_aef(self, unit):
+        self.aef = unit
+
+    def get_aef(self):
+        return self.aef
+
+

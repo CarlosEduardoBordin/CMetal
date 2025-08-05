@@ -8,7 +8,7 @@ class VerificationProcess:
                  w_x_text, r_x_text,
                  z_x_text, i_y_text, w_y_text, r_y_text, z_y_text, r_t_text, i_t_text, bf_two_text, d_tw_text, cw_text,
                  u_text, fy, fu, lfx, lfy, lfz,
-                 flb, fnt, fnc, fcx, fcy, mfx, mfy, y_um, y_dois, g, e, cb, frame_name, save_path):
+                 flb, fnt, fnc, fcx, fcy, mfx, mfy, y_um, g, e, cb, frame_name, save_path):
         self.linear_mass_text = linear_mass_text
         self.d_text = d_text
         self.bf_text = bf_text
@@ -44,7 +44,6 @@ class VerificationProcess:
         self.mfx = mfx
         self.mfy = mfy
         self.y_um = y_um
-        self.y_dois = y_dois
         self.e = e
         self.g = g
         self.cb = cb

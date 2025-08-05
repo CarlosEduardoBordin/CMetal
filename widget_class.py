@@ -28,7 +28,7 @@ class StaticBox(wx.Panel):
 
         self.SetSizer(self.sizer_box_sizer)
 
-    # configuracao do widget interno
+        # configuracao do widget interno
     def widgets_add(self, widget, cols, free_expansion):
         if self.orientation!= "grid" and self.orientation != "grid_four":
             if free_expansion:
@@ -72,6 +72,9 @@ class TextBoxVrf(wx.TextCtrl):
     def _set_background(self, color):
         self.SetBackgroundColour(color)
         self.Refresh()
+
+    def set_value(self, value):
+        self.SetValue(value)
 
 class SaveBox(wx.FileDialog):
     def __init__(self, parent):

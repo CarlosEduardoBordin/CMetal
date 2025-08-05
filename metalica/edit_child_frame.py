@@ -3,8 +3,8 @@ import wx.grid
 import os
 from itertools import product # para 2 for dentro de 1 linha
 from widget_class import StaticBox
-from metalica.table_manipulation import ReadExcelFile
-from metalica.table_manipulation import WriteExcelFile
+from table_manipulation import ReadExcelFile
+from table_manipulation import WriteExcelFile
 
 class EditChildFrame(wx.MDIChildFrame):
     def __init__(self, parent, frame_name):
@@ -25,6 +25,7 @@ class EditChildFrame(wx.MDIChildFrame):
                 for cls in range(num_cols):
                     line_data.append(self.grid.GetCellValue(ln, cls))  # Capturar valor da célula
                 data.append(line_data)
+            print(data)
             file_save_name = WriteExcelFile("steel.xlsx")
             file_save_name.save_data_to_file("tipo_de_aco", data, num_cols, ["Tipo", "fy","fu"])
 
