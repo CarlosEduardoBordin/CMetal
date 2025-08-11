@@ -48,6 +48,7 @@ class StaticBox(wx.Panel):
             self.grid_sizer_four.Add(widget, 1, flag=wx.EXPAND | wx.ALL, border=5)
 
 
+
 class TextBoxVrf(wx.TextCtrl):
     def __init__(self, parent, value, only_numeric=False, **kwargs):
         super().__init__(parent, value = value, style=wx.TE_PROCESS_ENTER, **kwargs)
@@ -75,6 +76,24 @@ class TextBoxVrf(wx.TextCtrl):
 
     def set_value(self, value):
         self.SetValue(value)
+
+
+class StaticTextTune(wx.StaticText):
+
+    def __init__(self, parent, text,style,red, green, blue, font, font_style, font_wight, **kwargs):
+        super().__init__(parent)
+        self.font = font
+        self.font_style = font_style
+        self.font_wight = font_wight
+        self.static_text = wx.StaticText(self, id=wx.ID_ANY, label=text, style = style )
+        self.static_text.SetForegroundColour(wx.Colour(red, green,blue))
+        self.static_text.SetFont(wx.Font(12, font, font_style, font_wight))
+
+    def set_valueand_color(self, text, red, green, blue):
+        self.static_text.SetLabel(label= text)
+        self.static_text.SetForegroundColour(wx.Colour(red, green,blue))
+
+
 
 class SaveBox(wx.FileDialog):
     def __init__(self, parent):

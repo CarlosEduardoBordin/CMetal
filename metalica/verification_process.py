@@ -7,7 +7,7 @@ class VerificationProcess:
     def __init__(self, linear_mass_text, d_text, bf_text, tw_text, tf_text, h_text, d_l_text, area_text, i_x_text,
                  w_x_text, r_x_text,
                  z_x_text, i_y_text, w_y_text, r_y_text, z_y_text, r_t_text, i_t_text, bf_two_text, d_tw_text, cw_text,
-                 u_text, fy, fu, lfx, lfy, lfz,
+                 u_text, aef, fy, fu, lfx, lfy, lfz,
                  flb, fnt, fnc, fcx, fcy, mfx, mfy, y_um, g, e, cb, frame_name, save_path):
         self.linear_mass_text = linear_mass_text
         self.d_text = d_text
@@ -31,6 +31,7 @@ class VerificationProcess:
         self.d_tw_text = d_tw_text
         self.cw_text = cw_text
         self.u_text = u_text
+        self.aef = aef
         self.fy = fy
         self.fu = fu
         self.lfx = lfx
@@ -64,7 +65,9 @@ class VerificationProcess:
     # para perfis laminados
 
     def normal_traction(self):
-        ntrd = self.area_text * self.fy / self.y_um
+        if self.aef <= 0: aef = self.area_text # verificacao da area efetiva !
+        else: aef = self.aef
+        ntrd = aef * self.fy / self.y_um
         ntsd = self.fnt
         passou = ntsd <= ntrd  #verificando
         status_texto = r" \textcolor{ForestGreen}{Aprovado}" if passou else r"\textcolor{red}{Reprovado}"
@@ -76,7 +79,7 @@ class VerificationProcess:
                 {
                     "tipo": "formula", "conteudo": (
                         r"N_{trd} = \frac{A_g * f_y}{\gamma_{a1}} \Rightarrow \frac{"
-                        + f"{self.area_text:.{self.casa_decimal_area}f} * " + f"{self.fy:.{self.casa_decimal_pressao}f}" + r"}{" +
+                        + f"{aef:.{self.casa_decimal_area}f} * " + f"{self.fy:.{self.casa_decimal_pressao}f}" + r"}{" +
                         f"{self.y_um:.{self.casa_decimal_pressao}f}" + r"} = " + f"{ntrd:.{self.casa_decimal_forca}f}"
                 )},
                 {"tipo": "paragrafo", "conteudo": "\n Verificando: "},
@@ -994,16 +997,19 @@ class VerificationProcess:
             meu_relatorio.add_calculo(ec[1])
             meu_relatorio.gerar_pdf()
             wx.MessageBox("Calculado com sucesso!", "Sucesso",wx.OK | wx.ICON_INFORMATION )
+            print(ec[0])
             return ec[0]
         except Exception as error:
             wx.MessageBox(f"{error}", "Erro",wx.OK | wx.ICON_ERROR)
             return ec[0]
 
+    def calculate_all(self):
+        ec = self.combined_forces()
+        return ec[0]
 
 
 
-
-# print(f"self.linear_mass_text {self.linear_mass_text}, self.d_text {self.d_text},  self.bf_text {self.bf_text},self.tw_text {self.tw_text}, self.tf_text {self.tf_text} "
+# print(f"self.linear_mass_text {self.linear_mass_text}, self.d_text {self.d_text}, self.bf_text {self.bf_text},self.tw_text {self.tw_text}, self.tf_text {self.tf_text} "
 #       f" self.h_text {self.h_text}, self.d_l_text {self.d_l_text}, self.d_l_text {self.d_l_text}, self.d_l_text {self.d_l_text}, self.d_l_text {self.d_l_text}"
 #       f" self.area_text {self.area_text}, self.i_x_text {self.i_x_text}, self.i_x_text {self.i_x_text}, self.w_x_text {self.w_x_text}, self.r_x_text {self.r_x_text}"
 #       f" self.z_x_text {self.z_x_text}, self.i_y_text {self.i_y_text}, self.w_y_text {self.w_y_text}, self.r_y_text {self.r_y_text}, self.z_y_text {self.z_y_text}"

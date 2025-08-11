@@ -7,7 +7,7 @@ from widget_class import TextBoxVrf
 class CBValuesConfiguration(wx.MDIChildFrame):
     def __init__(self, parent, frame_name ):
         super().__init__(parent=parent.GetParent(), id=wx.ID_ANY, title=frame_name,
-                         pos=wx.DefaultPosition, size=(895, 450))
+                         pos=wx.DefaultPosition, size=(895, 450), style=wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX)
         #parent=parent.GetParent() - para pegar herdar as propriedades do childframe
         self.parent = parent
         self.window_main_panel = wx.Panel(self)

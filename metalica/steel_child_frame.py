@@ -3,13 +3,14 @@ import wx.adv
 import re #biblioteca de expressoes
 from pint import UnitRegistry
 from metalica.edit_child_frame import EditChildFrame
-from widget_class import StaticBox , TextBoxVrf, SaveBox
+from widget_class import StaticBox , TextBoxVrf, SaveBox, StaticTextTune
 from table_manipulation import ReadExcelFile
 from metalica.matplot_img_draw import DrawBeam
 from metalica.help_steel_child_frame import ImgHelpButton
 from metalica.cb_child_frame import CBValuesConfiguration
 from metalica.aef_child_frame import AefValuesConfiguration
 from metalica.verification_process import VerificationProcess
+from metalica.child_frame_list import PerfilList
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 
 
@@ -21,13 +22,14 @@ class SteelChildFrame(wx.MDIChildFrame):
         #parametros iniciais da janela
         super().__init__(parent, id=wx.ID_ANY, title = frame_name,
                          pos=(0,0), size = (800,740), style = wx.DEFAULT_FRAME_STYLE)
+        self.perfil_list = []
         self.parent = self.GetParent() #atributo parente da janela
         #------------------------------------------------funcoes dos botoes
         self.data_steel_type = ReadExcelFile("steel.xlsx","tipo_de_aco")
         self.data_steel_lmn = ReadExcelFile("steel.xlsx","laminado")
 
         self.cb = 1
-        self.aef = None
+        self.aef = -1
 
         # **************************************************************************************** SUM sistema de unidade de medida
         #trabalhando em m, KN, Pa para realizar o calculo final!
@@ -151,70 +153,136 @@ class SteelChildFrame(wx.MDIChildFrame):
             cb = CBValuesConfiguration(self,f"Fator de modificação para diagrama de momento fletor não uniforme Cb - {frame_name}")
             cb.Show()
         def on_aef(event):
-            aef = AefValuesConfiguration(self,
-                                       f"Área líquida efetiva Aef - {frame_name}")
+            aef = AefValuesConfiguration(parent,self,f"Área líquida efetiva Aef - {frame_name}")#
             aef.Show()
 
         def on_teste(event):
-            teste = self.parent.get_cb()
-            print(teste)
+            # teste = self.parent.get_cb()
+            print(self.get_aef())
+
+        def get_info(option_selected, aef):
+            try:
+                fy = float(self.text_fy.get_value())
+                fu = float(self.text_fu.get_value())
+                e = float(parent.get_e_modulo())
+                g = float(parent.get_g_modulo())
+                y_um = float(parent.get_y_um())
+                lfx_value = unit_converter_dois(self.input_lfx.get_value(), parent.get_unit_lenght()[0],
+                                                parent.get_unit_lenght()[0])
+                lfy_value = unit_converter_dois(self.input_lfy.get_value(), parent.get_unit_lenght()[0],
+                                                parent.get_unit_lenght()[0])
+                lfz_value = unit_converter_dois(self.input_lfz.get_value(), parent.get_unit_lenght()[0],
+                                                parent.get_unit_lenght()[0])
+                lb_value = unit_converter_dois(self.input_lfb.get_value(), parent.get_unit_lenght()[0],
+                                               parent.get_unit_lenght()[0])
+                fnt_value = unit_converter_dois(self.input_fnt.get_value(), parent.get_unit_force()[0],
+                                                parent.get_unit_force()[0])
+                fnc_value = unit_converter_dois(self.input_fnc.get_value(), parent.get_unit_force()[0],
+                                                parent.get_unit_force()[0])
+                fcx_value = unit_converter_dois(self.input_fcx.get_value(), parent.get_unit_force()[0],
+                                                parent.get_unit_force()[0])
+                fcy_value = unit_converter_dois(self.input_fcy.get_value(), parent.get_unit_force()[0],
+                                                parent.get_unit_force()[0])
+                mfx_value = unit_converter_dois(self.input_mx.get_value(), parent.get_unit_moment()[0],
+                                                parent.get_unit_moment()[0])
+                mfy_value = unit_converter_dois(self.input_my.get_value(), parent.get_unit_moment()[0],
+                                                parent.get_unit_moment()[0])
+                # pegando dados do perfil
+                text_values = label_and_object.keys()
+                return_values_dimension = self.data_steel_lmn.get_name_and_return_col_value("BITOLA mm x kg/mgraus",
+                                                                                            f"{option_selected}",
+                                                                                            text_values)
+                value_list_perfil = list(return_values_dimension.values())
+                transformed_list_perfil_data = []
+
+                i = 0
+                for unit, value_adress in label_and_object.items():
+                    search_unit = unit_extractor(unit)
+                    value_converted = 0
+                    if search_unit in self.factor_multiplier_lenght:
+                        value_converted = unit_converter_dois(value_list_perfil[i], search_unit,
+                                                              parent.get_unit_lenght()[0])  # ok
+                    elif search_unit in self.factor_multiplier_area:
+                        value_converted = unit_converter_dois(value_list_perfil[i], search_unit, parent.get_unit_area()[0])
+                    elif search_unit in self.factor_multiplier_volume:
+                        value_converted = unit_converter_dois(value_list_perfil[i], search_unit,
+                                                              parent.get_unit_volume()[0])
+                    elif search_unit in self.factor_multiplier_inertia:
+                        value_converted = unit_converter_dois(value_list_perfil[i], search_unit,
+                                                              parent.get_unit_inercia()[0])
+                    elif search_unit in self.factor_multiplier_six_elevated:
+                        value_converted = unit_converter_dois(value_list_perfil[i], search_unit, parent.get_unit_six()[0])
+                    else:
+                        value_converted = value_list_perfil[i]
+                    value_converted = float(value_converted)
+                    transformed_list_perfil_data.extend([value_converted])
+                    i += 1
+                    # print(f"Unidade : {unit} , valor: {value_adress} , para  {value_converted}")
+
+                # print(transformed_list_perfil_data)
+                values_to_append = [aef, fy, fu, lfx_value, lfy_value, lfz_value, lb_value, fnt_value,
+                                    fnc_value, fcx_value, fcy_value, mfx_value, mfy_value,
+                                    y_um, g, e, 1]
+                transformed_list_perfil_data.extend(values_to_append)
+                return transformed_list_perfil_data
+            except Exception as e:
+                wx.MessageBox(f"Erro : {e}", "Erro", wx.OK | wx.ICON_ERROR)
+
+        def return_aef():
+            if self.get_aef() > 0:
+                aef = float(self.get_aef())
+                return aef
+            else:
+                aef = -1
+                wx.MessageBox(f"A área utilizada no calculo será considerada igual a área bruta", "Alerta",
+                              wx.OK | wx.ICON_EXCLAMATION)
+                return aef
+
+
         def on_calculate(event):
-            fy = float(self.text_fy.get_value())
-            fu = float(self.text_fu.get_value())
-            e = float(parent.get_e_modulo())
-            g = float(parent.get_g_modulo())
-            y_um = float(parent.get_y_um())
-            lfx_value = unit_converter_dois(self.input_lfx.get_value(), parent.get_unit_lenght()[0],parent.get_unit_lenght()[0])
-            lfy_value = unit_converter_dois(self.input_lfy.get_value(), parent.get_unit_lenght()[0], parent.get_unit_lenght()[0])
-            lfz_value = unit_converter_dois(self.input_lfz.get_value(), parent.get_unit_lenght()[0], parent.get_unit_lenght()[0])
-            lb_value = unit_converter_dois(self.input_lfb.get_value(), parent.get_unit_lenght()[0], parent.get_unit_lenght()[0])
-            fnt_value = unit_converter_dois(self.input_fnt.get_value(), parent.get_unit_force()[0], parent.get_unit_force()[0])
-            fnc_value = unit_converter_dois(self.input_fnc.get_value(), parent.get_unit_force()[0], parent.get_unit_force()[0])
-            fcx_value = unit_converter_dois(self.input_fcx.get_value(), parent.get_unit_force()[0], parent.get_unit_force()[0])
-            fcy_value = unit_converter_dois(self.input_fcy.get_value(), parent.get_unit_force()[0], parent.get_unit_force()[0])
-            mfx_value = unit_converter_dois(self.input_mx.get_value(), parent.get_unit_moment()[0], parent.get_unit_moment()[0])
-            mfy_value = unit_converter_dois(self.input_my.get_value(), parent.get_unit_moment()[0], parent.get_unit_moment()[0])
-            #pegando dados do perfil
-            text_values = label_and_object.keys()
-            option_selected = self.select_steel_perfil.GetStringSelection()
+            try:
+                aef = return_aef()
+                option_selected = self.select_steel_perfil.GetStringSelection()
+                transformed_list_perfil_data = get_info(option_selected, aef)
+                self.save_dialog = SaveBox(self.parent) #abrir o dialogo de salvar
+                path = self.save_dialog.get_path()
+                self.save_dialog.Destroy()
+                print(f"{path}")
 
-            return_values_dimension = self.data_steel_lmn.get_name_and_return_col_value("BITOLA mm x kg/mgraus",
-                                                                                        f"{option_selected}",
-                                                                                        text_values)
-            value_list_perfil = list(return_values_dimension.values())
-            transformed_list_perfil_data = []
-            i = 0
-            for unit, value_adress in label_and_object.items():
-                search_unit = unit_extractor(unit)
-                value_converted = 0
-                if search_unit in self.factor_multiplier_lenght:
-                    value_converted = unit_converter_dois(value_list_perfil[i], search_unit, parent.get_unit_lenght()[0]) #ok
-                elif search_unit in self.factor_multiplier_area:
-                    value_converted = unit_converter_dois(value_list_perfil[i], search_unit, parent.get_unit_area()[0])
-                elif search_unit in self.factor_multiplier_volume:
-                    value_converted = unit_converter_dois(value_list_perfil[i], search_unit, parent.get_unit_volume()[0])
-                elif search_unit in self.factor_multiplier_inertia:
-                    value_converted = unit_converter_dois(value_list_perfil[i], search_unit, parent.get_unit_inercia()[0])
-                elif search_unit in self.factor_multiplier_six_elevated:
-                    value_converted = unit_converter_dois(value_list_perfil[i], search_unit, parent.get_unit_six()[0])
+                self.data = VerificationProcess(*transformed_list_perfil_data,frame_name, path)
+                resultado = self.data.calculate()
+                if resultado:
+                    self.status_label.SetLabel("APROVADO!")
+                    self.status_label.SetForegroundColour(wx.Colour(20, 200, 20))
+                    # self.status_label.set_valueand_color("APROVADO!", 20, 200, 20)#Alinhamento de centro nao esta funcionando !
                 else:
-                    value_converted = value_list_perfil[i]
-                value_converted = float(value_converted)
-                transformed_list_perfil_data.extend([value_converted])
-                i += 1
-                print(f"Unidade : {unit} , valor: {value_adress} , para  {value_converted}")
+                    self.status_label.SetLabel("REPROVADO!")
+                    self.status_label.SetForegroundColour(wx.Colour(200, 20, 20))
+                    # self.status_label.set_valueand_color("REPROVADO!",200, 20, 20)
+                self.box_status.Update()
+                self.box_status.Layout()
+            except Exception as e:
+                wx.MessageBox(f"Erro : {e}", "Erro", wx.OK | wx.ICON_ERROR)
 
-            print(transformed_list_perfil_data)
-            values_to_append = [fy, fu, lfx_value, lfy_value, lfz_value, lb_value, fnt_value,
-                                fnc_value, fcx_value, fcy_value, mfx_value, mfy_value,
-                                y_um, g, e,1]
-            transformed_list_perfil_data.extend(values_to_append)
-            self.save_dialog = SaveBox(self.parent) #abrir o dialogo de salvar
-            path = self.save_dialog.get_path()
-            self.save_dialog.Destroy()
-            print(f"{path}")
-            self.data = VerificationProcess(*transformed_list_perfil_data,frame_name, path)
-            self.data.calculate()
+
+        def on_calculate_all(event):
+            try:
+                self.clear_perfil_list()
+                steel_perfil_list = self.data_steel_lmn.return_value_by_one_col("BITOLA mm x kg/mgraus")
+                aef = return_aef()
+
+                for perfil in steel_perfil_list:
+                    transformed_list_perfil_data = get_info(perfil, aef)
+                    self.data = VerificationProcess(*transformed_list_perfil_data, None,None)
+                    resultado = [perfil, self.data.calculate_all()]
+                    self.append_perfil_list(resultado)
+                    print(transformed_list_perfil_data)
+                    print(type(perfil))
+
+                lista_aprovados_reprovados = PerfilList(parent, self, f"Lista de perfis - {frame_name}")
+                lista_aprovados_reprovados.Show()
+            except Exception as e:
+                wx.MessageBox(f"Erro : {e}", "Erro", wx.OK | wx.ICON_ERROR)
 
 
         #------------------------------------------------
@@ -346,13 +414,12 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.button_aef = wx.Button(self.box_lengths, label = "Aef")
         self.box_lengths.widgets_add(self.button_aef, 1,  False)
         self.button_aef.Bind(wx.EVT_BUTTON, on_aef)
-
-        self.awdawd = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Área efetiva :")
-        self.box_lengths.widgets_add(self.awdawd, 0, False)
-        self.button_teste = wx.Button(self.box_lengths, label = "Aef")
-        self.box_lengths.widgets_add(self.button_teste, 1,  False)
-        self.button_teste.Bind(wx.EVT_BUTTON, on_teste)
-
+        #teste
+        # self.awdawd = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Área efetiva :")
+        # self.box_lengths.widgets_add(self.awdawd, 0, False)
+        # self.button_teste = wx.Button(self.box_lengths, label = "Aef")
+        # self.box_lengths.widgets_add(self.button_teste, 1,  False)
+        # self.button_teste.Bind(wx.EVT_BUTTON, on_teste)
         #valores dos esforcos
         self.box_load_solicitation = StaticBox(self.box_values_input, "Solicitações", orientation= "grid")
         self.box_values_input.widgets_add(self.box_load_solicitation, 0, False)
@@ -392,17 +459,6 @@ class SteelChildFrame(wx.MDIChildFrame):
                             "Alma d'/tw : ": self.d_tw_text, "Cw (cm^6) : ": self.cw_text,
                             "u (m²/m) : ": self.u_text}
 
-        #         label_and_object = {"Massa Linear kg/m": self.linear_mass_text, "d (mm) : ": self.d_text,
-        #                             "bf (mm) : ": self.bf_text, "tw (mm) : ": self.tw_text, "tf (mm) : ": self.tf_text,
-        #                             "h (mm) : ": self.h_text, "d' (mm) : ": self.d_l_text, "Área (cm²) : ": self.area_text,
-        #                             "Ix (cm^4) : ": self.i_x_text, "Wx (cm³) : ": self.w_x_text,
-        #                             "rx (cm) : ": self.r_x_text, "zx (cm) : ": self.z_x_text, "Iy (cm^4) : ": self.i_y_text,
-        #                             "Wy (cm³) : ": self.w_y_text, "ry (cm) : ": self.r_y_text,
-        #                             "zy (cm³) : ": self.z_y_text, "rt (cm) : ": self.r_t_text,
-        #                             "It (cm^4) : ": self.i_t_text, "Mesa bf/2.tf : ": self.bf_two_text,
-        #                             "Alma d'/tw : ": self.d_tw_text, "Cw (cm^6) : ": self.cw_text,
-        #                             "u (m²/m) : ": self.u_text}
-
         #------------------------------------------------- box resultados - verificar como vai ser gerado o relatorio
         self.box_results = StaticBox(self.box_values_input, "Resultados", orientation= "vertical")
         self.box_values_input.widgets_add(self.box_results, 0, True)
@@ -412,11 +468,17 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.box_status = StaticBox(self.box_results, "Situação:", orientation = "vertical")
         self.box_results.widgets_add(self.box_status, 0,False)
 
+        # self.box_todos = StaticBox(self.box_results, "", orientation="vertical")
+        # self.box_results.widgets_add(self.box_todos, 0, True)
+        self.calculate_all = wx.Button(self.box_results, label="Calcular para todos")
+        self.box_results.widgets_add(self.calculate_all, 0, False)
+        self.calculate_all.Bind(wx.EVT_BUTTON, on_calculate_all)
+
+
+
+        # self.status_label = StaticTextTune(self.box_status, "STATUS",wx.ALIGN_CENTER | wx.ALIGN_CENTER_HORIZONTAL, 0,0,0, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
         self.status_label = wx.StaticText(self.box_status, id=wx.ID_ANY, label="STATUS", style=wx.ALIGN_CENTER_HORIZONTAL) #style=wx.ALIGN_CENTER_HORIZONTAL centralizar o texto na box
-
-        font = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
-        self.status_label.SetFont(font)
-
+        self.status_label.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
         self.box_status.widgets_add(self.status_label, 0, False)
 
         self.main_sizer.Add(self.box_steel_type,proportion =  0, flag = wx.ALL | wx.EXPAND, border = 5) #adiciona o primeiro staticbox ao sizer principal da janela
@@ -436,4 +498,12 @@ class SteelChildFrame(wx.MDIChildFrame):
     def get_aef(self):
         return self.aef
 
+    def append_perfil_list(self, perfis):
+        self.perfil_list.append(perfis)
+
+    def clear_perfil_list(self):
+        self.perfil_list.clear()
+
+    def get_perfil_list(self):
+        return self.perfil_list
 

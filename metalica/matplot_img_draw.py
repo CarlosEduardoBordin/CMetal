@@ -9,13 +9,13 @@ class DrawBeam(wx.Panel):
         #---------------------------- cfg plot canva -verificar a cor de fundo??
         self.fig, self.ax = plt.subplots(figsize=(2, 2))
         self.ax.set_aspect("equal")
-        self.ax.axis('off')
+        self.ax.axis("off")
         self.fig.patch.set_facecolor((0.941, 0.941, 0.941)) # 240/255 -> cor do fundo
 
     def draw_w_hp(self, height, width, tw):
         self.ax.clear()
         self.ax.set_aspect("equal")
-        self.ax.axis('off')
+        self.ax.axis("off")
         if not tw == 0:
             #---------------------------- desenha o perfil
             mesa_sup = patches.Rectangle((-width / 2, height / 2 - tw), width, tw, facecolor="steelblue")
@@ -46,7 +46,7 @@ class DrawBeam(wx.Panel):
             y_cota_a = 0
             x1a =  -tw/50
             x2a =  tw/50
-
+            #o texto buga quando coloca exatamente no meio
             self.ax.annotate("", xy=(x1a, y_cota_a), xytext=(x2a , y_cota_a),
                              arrowprops=dict(arrowstyle="<->"))
             self.ax.text(0, y_cota_a -30, f"{tw} mm", ha="center", va="top")
