@@ -21,7 +21,7 @@ class SteelChildFrame(wx.MDIChildFrame):
     def __init__(self, parent, frame_name):
         #parametros iniciais da janela
         super().__init__(parent, id=wx.ID_ANY, title = frame_name,
-                         pos=(0,0), size = (800,740), style = wx.DEFAULT_FRAME_STYLE)
+                         pos=(0,0), size = (750,740), style = wx.DEFAULT_FRAME_STYLE)
         self.perfil_list = []
         self.parent = self.GetParent() #atributo parente da janela
         #------------------------------------------------funcoes dos botoes
@@ -67,6 +67,7 @@ class SteelChildFrame(wx.MDIChildFrame):
             try:
                 quantidade = value * ureg(from_unit)
                 return quantidade.to(to_unit).magnitude
+            #                return quantidade.to(to_unit).magnitude
             except Exception as e:
                 raise ValueError(f"Erro na conversão de {from_unit} para {to_unit}: {e}")
 
@@ -166,7 +167,12 @@ class SteelChildFrame(wx.MDIChildFrame):
                 fu = float(self.text_fu.get_value())
                 e = float(parent.get_e_modulo())
                 g = float(parent.get_g_modulo())
+                # e = unit_converter_dois(float(parent.get_e_modulo()), "Pa",
+                #                                 parent.get_unit_press()[0])
+                # g = unit_converter_dois(float(parent.get_g_modulo()), "Pa",
+                #                                 parent.get_unit_press()[0])
                 y_um = float(parent.get_y_um())
+                cb = float(self.get_cb()) #adm
                 lfx_value = unit_converter_dois(self.input_lfx.get_value(), parent.get_unit_lenght()[0],
                                                 parent.get_unit_lenght()[0])
                 lfy_value = unit_converter_dois(self.input_lfy.get_value(), parent.get_unit_lenght()[0],
@@ -222,8 +228,9 @@ class SteelChildFrame(wx.MDIChildFrame):
                 # print(transformed_list_perfil_data)
                 values_to_append = [aef, fy, fu, lfx_value, lfy_value, lfz_value, lb_value, fnt_value,
                                     fnc_value, fcx_value, fcy_value, mfx_value, mfy_value,
-                                    y_um, g, e, 1]
+                                    y_um, g, e, cb]
                 transformed_list_perfil_data.extend(values_to_append)
+                print(transformed_list_perfil_data)
                 return transformed_list_perfil_data
             except Exception as e:
                 wx.MessageBox(f"Erro : {e}", "Erro", wx.OK | wx.ICON_ERROR)
@@ -238,18 +245,33 @@ class SteelChildFrame(wx.MDIChildFrame):
                               wx.OK | wx.ICON_EXCLAMATION)
                 return aef
 
+        # ureg = UnitRegistry()
 
         def on_calculate(event):
-            try:
+            # try:
                 aef = return_aef()
                 option_selected = self.select_steel_perfil.GetStringSelection()
-                transformed_list_perfil_data = get_info(option_selected, aef)
+                a = get_info(option_selected, aef)
+                print((a[0]))
+                print(((a[1]) * ureg(parent.get_unit_lenght()[0])))
+
+                transformed_list_perfil_data = ((a[0]),((a[1]) * ureg(parent.get_unit_lenght()[0])) , (a[2]) * ureg(parent.get_unit_lenght()[0]), (a[3]) * ureg(parent.get_unit_lenght()[0]), (a[4]) * ureg(parent.get_unit_lenght()[0]),
+                                                (a[5]) * ureg(parent.get_unit_lenght()[0]), (a[6]) * ureg(parent.get_unit_lenght()[0]), (a[7]) * ureg(parent.get_unit_area()[0]), (a[8]) * ureg(parent.get_unit_inercia()[0]),
+                                                (a[9]) * ureg(parent.get_unit_volume()[0]), (a[10]) * ureg(parent.get_unit_lenght()[0]) , (a[11]) * ureg(parent.get_unit_volume()[0]), (a[12]) * ureg(parent.get_unit_inercia()[0]),
+                                                (a[13]) * ureg(parent.get_unit_volume()[0]), (a[14]) * ureg(parent.get_unit_lenght()[0]), (a[15]) * ureg(parent.get_unit_volume()[0]), (a[16]) * ureg(parent.get_unit_lenght()[0]),
+                                                (a[17]) * ureg(parent.get_unit_inercia()[0]), (a[18]), (a[19]) , (a[20]) * ureg(parent.get_unit_six()[0]), (a[21]), (a[22]), (a[23]) * ureg(parent.get_unit_press()[0]), (a[24]) * ureg(parent.get_unit_press()[0]),
+                                                (a[25]) * ureg(parent.get_unit_lenght()[0]) , (a[26]) * ureg(parent.get_unit_lenght()[0]), (a[27]) * ureg(parent.get_unit_lenght()[0]), (a[28]) * ureg(parent.get_unit_lenght()[0]),
+                                                (a[29]) * ureg(parent.get_unit_force()[0]), (a[30]) * ureg(parent.get_unit_force()[0]), (a[31]) * ureg(parent.get_unit_force()[0]), (a[32]) * ureg(parent.get_unit_force()[0]),
+                                                (a[33]) * ureg(parent.get_unit_moment()[0]), (a[34]) * ureg(parent.get_unit_moment()[0]), (a[35]), (a[36]) * ureg(parent.get_unit_press()[0]),
+                                                (a[37]) * ureg(parent.get_unit_press()[0]) , (a[38])
+                )
+                print(transformed_list_perfil_data)
                 self.save_dialog = SaveBox(self.parent) #abrir o dialogo de salvar
                 path = self.save_dialog.get_path()
                 self.save_dialog.Destroy()
                 print(f"{path}")
 
-                self.data = VerificationProcess(*transformed_list_perfil_data,frame_name, path)
+                self.data = VerificationProcess(parent,*transformed_list_perfil_data,frame_name, path)
                 resultado = self.data.calculate()
                 if resultado:
                     self.status_label.SetLabel("APROVADO!")
@@ -261,8 +283,8 @@ class SteelChildFrame(wx.MDIChildFrame):
                     # self.status_label.set_valueand_color("REPROVADO!",200, 20, 20)
                 self.box_status.Update()
                 self.box_status.Layout()
-            except Exception as e:
-                wx.MessageBox(f"Erro : {e}", "Erro", wx.OK | wx.ICON_ERROR)
+            # except Exception as e:
+            #     wx.MessageBox(f"Erro : {e}", "Erro", wx.OK | wx.ICON_ERROR)
 
 
         def on_calculate_all(event):
@@ -273,7 +295,7 @@ class SteelChildFrame(wx.MDIChildFrame):
 
                 for perfil in steel_perfil_list:
                     transformed_list_perfil_data = get_info(perfil, aef)
-                    self.data = VerificationProcess(*transformed_list_perfil_data, None,None)
+                    self.data = VerificationProcess(parent, *transformed_list_perfil_data, None,None)
                     resultado = [perfil, self.data.calculate_all()]
                     self.append_perfil_list(resultado)
                     print(transformed_list_perfil_data)
@@ -468,10 +490,10 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.box_status = StaticBox(self.box_results, "Situação:", orientation = "vertical")
         self.box_results.widgets_add(self.box_status, 0,False)
 
-        # self.box_todos = StaticBox(self.box_results, "", orientation="vertical")
-        # self.box_results.widgets_add(self.box_todos, 0, True)
-        self.calculate_all = wx.Button(self.box_results, label="Calcular para todos")
-        self.box_results.widgets_add(self.calculate_all, 0, False)
+        self.box_todos = StaticBox(self.box_results, "Todos os perfis", orientation="vertical")
+        self.box_results.widgets_add(self.box_todos, 0, True)
+        self.calculate_all = wx.Button(self.box_todos, label="Calcular")
+        self.box_todos.widgets_add(self.calculate_all, 0, False)
         self.calculate_all.Bind(wx.EVT_BUTTON, on_calculate_all)
 
 
