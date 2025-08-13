@@ -9,7 +9,8 @@ from table_manipulation import WriteExcelFile
 class EditChildFrame(wx.MDIChildFrame):
     def __init__(self, parent, frame_name):
         super().__init__(parent, id=wx.ID_ANY, title = frame_name,
-                         pos=wx.DefaultPosition, size = (400,650), style = wx.DEFAULT_FRAME_STYLE)
+                         pos=wx.DefaultPosition, size = (400,670), style = wx.DEFAULT_FRAME_STYLE)
+
         def add_line(event):
             self.grid.AppendRows(1)
         def rmv_line(event):
@@ -64,12 +65,18 @@ class EditChildFrame(wx.MDIChildFrame):
         self.table_box_file = StaticBox(self.table_box,"Arquivo", orientation = "horizontal")
         self.table_box.widgets_add(self.table_box_file, 0,True)
         self.btn_add = wx.Button(self.table_box_file, label="Adicionar")
+        self.btn_add.SetBitmapPosition(wx.LEFT)
+        self.btn_add.SetBitmap(wx.Bitmap("icones/mais.png", wx.BITMAP_TYPE_PNG))
         self.table_box_file.widgets_add(self.btn_add, 0,True)
         self.btn_add.Bind(wx.EVT_BUTTON, add_line)
         self.btn_rmv = wx.Button(self.table_box_file, label="Remover")
+        self.btn_rmv.SetBitmapPosition(wx.LEFT)
+        self.btn_rmv.SetBitmap(wx.Bitmap("icones/menos.png", wx.BITMAP_TYPE_PNG))
         self.table_box_file.widgets_add(self.btn_rmv, 0,True)
         self.btn_rmv.Bind(wx.EVT_BUTTON, rmv_line)
         self.btn_save= wx.Button(self.table_box_file, label="Salvar")
+        self.btn_save.SetBitmapPosition(wx.LEFT)
+        self.btn_save.SetBitmap(wx.Bitmap("icones/disquete.png", wx.BITMAP_TYPE_PNG))
         self.table_box_file.widgets_add(self.btn_save, 0,True)
         self.btn_save.Bind(wx.EVT_BUTTON, save_table)
 

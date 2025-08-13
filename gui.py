@@ -2,12 +2,15 @@ import wx
 import wx.adv  #aboutbox
 import wx.aui
 import pint
+import os
 # importa modulos
 from configuracoes.configuracoes_child_frame import ConfiguracoesChildFrame
 from sobre.sobre_child_frame import SobreChildFrame
 from metalica.steel_child_frame import SteelChildFrame
 from metalica.edit_child_frame import EditChildFrame
 from table_manipulation import ReadExcelFile
+from if_steel_child_frame import IFSeel
+from widget_class import StaticBox
 # Declara Classe
 ureg = pint.UnitRegistry()
 
@@ -50,6 +53,8 @@ class MDIFrame(wx.MDIParentFrame):
         self.g_modulo = self.data_si.get_name_and_return_col_value_str("Tipo", f"g", ["Unidade"])
         self.e_modulo = self.data_si.get_name_and_return_col_value_str("Tipo", f"e", ["Unidade"])
         self.y_um = self.data_si.get_name_and_return_col_value_str("Tipo", f"y1", ["Unidade"])
+        self.papel = self.data_si.get_name_and_return_col_value_str("Tipo", f"papel", ["Unidade"])
+        self.orientacao = self.data_si.get_name_and_return_col_value_str("Tipo", f"orientacao", ["Unidade"])
 
         # Criar um item
         self.menu = wx.Menu() # Criar um item de menu
@@ -100,6 +105,10 @@ class MDIFrame(wx.MDIParentFrame):
         self.Bind(wx.EVT_MENU, self.configuracoes, id=self.configuracoes_id)
         self.Bind(wx.EVT_MENU, self.sair, id=self.sair_id)
         self.Bind(wx.EVT_CLOSE, self.sair)
+
+        img = IFSeel(self)
+        img.Show()
+
 
 
     def perfil(self, evt):
@@ -207,7 +216,17 @@ class MDIFrame(wx.MDIParentFrame):
     def get_y_um(self):
         return self.y_um
 
+    def set_papel(self, unit):
+        self.papel = unit
 
+    def get_papel(self):
+        return self.papel
+
+    def set_orientacao(self, unit):
+        self.orientacao = unit
+
+    def get_orientacao(self):
+        return self.orientacao
 
 # Cria aplicacao Wx
 app = wx.App(False)

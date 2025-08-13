@@ -136,13 +136,15 @@ class VerificationProcess:
         # n_e_x = n_e_x.to(self.unidade_forca)
         # n_e_y = n_e_y.to(self.unidade_forca)
         # n_e_z = n_e_z.to(self.unidade_forca)
-
-        print(n_e_x)
-        print(n_e_y)
-        print(n_e_z)
-        n_e = np.min([n_e_x.magnitude, n_e_y.magnitude, n_e_z.magnitude])
+        #
+        # print(n_e_x)
+        # print(n_e_y)
+        # print(n_e_z)
+        n_e = min([n_e_x, n_e_y, n_e_z])
         # lambda0 5.3.3.2
         lbd_zero = np.sqrt(self.area_text * self.fy / n_e)
+        print(f"lbd_zero {lbd_zero}")
+
         # fator de reducao 5.3.3.1
         if lbd_zero.magnitude <= 1.5:
             psi = 0.658 ** (lbd_zero.magnitude ** 2)
@@ -167,22 +169,28 @@ class VerificationProcess:
             # alma
             if b_sobre_t_alma <= b_sobre_t_limit_alma / np.sqrt(psi):
                 area_efetiva_alma = 0
-                # area_efetiva_alma =  self.d_l_text * self.tw_text
             else:
+                print("b_sobre_t_alma - nao passou ")
                 sigma_e_l = ((1.31 * ((1.49 * np.sqrt(self.e / self.fy)) / b_sobre_t_alma)) ** 2) * self.fy
                 b_efetivo_alma = self.d_l_text * (1 - 0.18 * np.sqrt(sigma_e_l / (psi * self.fy))) * np.sqrt(
                     sigma_e_l / (psi * self.fy))
-                # area_efetiva_alma = (self.d_l_text * self.tw_text) - b_efetivo
+                #befetivo é a largura do elemento
+                area_efetiva_alma = b_efetivo_alma * self.tw_text
+
             if b_sobre_t_aba <= b_sobre_t_aba <= b_sobre_t_limit_aba / np.sqrt(psi):
                 area_efetiva_aba = 0
                 # area_efetiva_aba = (self.bf_text/2) * self.tf_text
             else:
+                print("b_sobre_t_aba - nao passou ")
                 sigma_e_l = ((1.49 * (
                         (0.56 * np.sqrt(self.e / self.fy)) / (self.bf_text / 2 * self.tf_text))) ** 2) * self.fy
                 b_efetivo_aba = (self.bf_text / 2) * (1 - 0.22 * np.sqrt(sigma_e_l / (psi * self.fy))) * np.sqrt(
                     sigma_e_l / (psi * self.fy))
+                area_efetiva_aba = (b_efetivo_aba * self.tf_text) *4
                 # area_efetiva_aba = ((self.bf_text/2) * self.tf_text)- b_efetivo
-            area_efetiva = self.area_text - area_efetiva_alma - area_efetiva_aba - b_efetivo_alma - b_efetivo_aba * 4
+            area_efetiva = self.area_text - area_efetiva_alma - area_efetiva_aba
+
+            # area_efetiva = self.area_text - area_efetiva_alma - area_efetiva_aba - b_efetivo_alma - b_efetivo_aba * 4
         nrdc = psi * area_efetiva * self.fy / self.y_um
         passou = self.fnc <= nrdc  # verificando
         status_texto = r" \textcolor{ForestGreen}{Aprovado}" if passou else r"\textcolor{red}{Reprovado}"
@@ -195,9 +203,9 @@ class VerificationProcess:
                     "tipo": "formula",
                     "conteudo": (
                             r"\lambda_x = \frac{L_x}{r_x} \Rightarrow = \frac{" + f"{self.lfx.magnitude:.{self.casa_decimal_comprimento}f}" + r"}{" +
-                            f"{self.r_x_text.magnitude:.{self.casa_decimal_comprimento}f}" + r"} = " + f"{ind_esblt_x:.2f}"
+                            f"{self.r_x_text.magnitude:.{self.casa_decimal_comprimento}f}" + r"} = " + f"{ind_esblt_x.magnitude:.2f}"
                             + r", \quad \lambda_y = \frac{L_y}{r_y} \Rightarrow \lambda_y = \frac{" + f"{self.lfy.magnitude:.{self.casa_decimal_comprimento}f}" +
-                            r"}{" + f"{self.r_y_text.magnitude:.{self.casa_decimal_comprimento}f}" + r"} = " + f"{ind_esblt_y:.2f} \n"
+                            r"}{" + f"{self.r_y_text.magnitude:.{self.casa_decimal_comprimento}f}" + r"} = " + f"{ind_esblt_y.magnitude:.2f} \n"
                     )
                 },
                 {"tipo": "paragrafo",
@@ -224,7 +232,7 @@ class VerificationProcess:
                 {
                     "tipo": "formula",
                     "conteudo": (
-                            r"R_0 = \sqrt{r_x^2 + r_y^2 + x_0^2 + y_0^2} \Rightarrow \sqrt{" + f"{self.r_x_text}" + r"^2 + " +
+                            r"R_0 = \sqrt{r_x^2 + r_y^2 + x_0^2 + y_0^2} \Rightarrow \sqrt{" + f"{self.r_x_text.magnitude}" + r"^2 + " +
                             f"{self.r_y_text.magnitude}" + r"^2 + 0^2 + 0^2} = " + f"{r_o.magnitude:.{self.casa_decimal_comprimento}f}" + f" \n"
                     )
                 },
@@ -232,7 +240,14 @@ class VerificationProcess:
                 {
                     "tipo": "formula",
                     "conteudo": (
-                            f"\n" + r"N_{ez} = \frac{1}{r_0} \left( \frac{\pi * E * C_w}{L_z^2} + G * J \right) \Rightarrow \frac{1}{" +
+                            f"\n" + r"N_{ez} = \frac{1}{r_0} \left( \frac{\pi * E * C_w}{L_z^2} + G * J \right) \Rightarrow "
+
+                    )
+                },
+                {
+                    "tipo": "formula",
+                    "conteudo": (
+                            r" \frac{1}{" +
                             f"{r_o:.{self.casa_decimal_comprimento}f}" + r"} \left( \frac{\pi * " + f"{self.e.magnitude:.{self.casa_decimal_pressao}f}" +
                             r" * " + f"{self.cw_text.magnitude:.{self.casa_decimal_six}f}" + r"}{" + f"{self.lfz.magnitude:.{self.casa_decimal_comprimento}f}" + r"^2} + " +
                             f"{self.g.magnitude:.{self.casa_decimal_pressao}f}" + r" + " + f"{self.i_t_text.magnitude:.{self.casa_decimal_inercia}f}" + r" \right) = " +
@@ -252,7 +267,7 @@ class VerificationProcess:
                     "conteudo": (
                             r"\lambda_0 = \sqrt{\frac{A_g * f_y}{N_e}} \Rightarrow \sqrt{\frac{" +
                             f"{self.area_text.magnitude:.{self.casa_decimal_area}f}" + r" * " + f"{self.fy.magnitude:.{self.casa_decimal_pressao}f}" +
-                            r"}{" + f"{n_e:.{self.casa_decimal_forca}f}" + r"}} = " + f"{lbd_zero:.2f}"
+                            r"}{" + f"{n_e.magnitude:.{self.casa_decimal_forca}f}" + r"}} = " + f"{lbd_zero.magnitude:.2f}"
                     )
                 },
                 {"tipo": "paragrafo", "conteudo": "\n Fator de redução: \n"},
@@ -308,12 +323,12 @@ class VerificationProcess:
             vrd = vpl / self.y_um
             status_lambda = r"\lambda \le \lambda_{p} "
             lambda_texto = (r"V_{rd} = \frac{V_{pl}}{\gamma_1} \Rightarrow \frac{" +
-                            f"{vpl:.{self.casa_decimal_forca}f}" + r"}{" + f"{self.y_um}" + r"} = " + f"{vrd:.{self.casa_decimal_forca}f}")
+                            f"{vpl.magnitude:.{self.casa_decimal_forca}f}" + r"}{" + f"{self.y_um}" + r"} = " + f"{vrd:.{self.casa_decimal_forca}f}")
         elif lambda_p < lambda_sf <= lambda_r:
             vrd = (lambda_p / lambda_sf) * (vpl / self.y_um)
             status_lambda = r"\lambda_{p} \le \lambda_{} \le \lambda_{r}  "
             lambda_texto = (r"V_{rd} = \frac{\lambda_{p} * V_{pl}}{\lambda * \gamma_1} \Rightarrow " + r"\frac{" +
-                            f"{lambda_p:.2f} * {vpl:.{self.casa_decimal_forca}f}" + r"}{" + f"{lambda_sf:.2f} * {self.y_um}" + r"} = " +
+                            f"{lambda_p.magnitude:.2f} * {vpl.magnitude:.{self.casa_decimal_forca}f}" + r"}{" + f"{lambda_sf.magnitude:.2f} * {self.y_um}" + r"} = " +
                             f"{vrd:.{self.casa_decimal_forca}f}")
         elif lambda_sf >= lambda_r:
             vrd = 1.24 * ((lambda_p / lambda_sf) ** 2) * (vpl / self.y_um)
@@ -321,7 +336,7 @@ class VerificationProcess:
             lambda_texto = (
                     r"V_{rd} = 1.24 * \left( \frac{\lambda_{p}}{\lambda} \right)^2 * \frac{V_{pl}}{\gamma_1} \Rightarrow " +
                     f"1.24 * \\left( \\frac{{{lambda_p}}}{{{lambda_sf}}} \\right)^2 * " +
-                    f"\\frac{{{vpl:.{self.casa_decimal_forca}f}}}{{{self.y_um}}} = {vrd:.{self.casa_decimal_forca}f}")
+                    f"\\frac{{{vpl.magnitude:.{self.casa_decimal_forca}f}}}{{{self.y_um}}} = {vrd:.{self.casa_decimal_forca}f}")
 
         passou = self.fcx <= vrd  # verificando
         status_texto = r" \textcolor{ForestGreen}{Aprovado}" if passou else r"\textcolor{red}{Reprovado}"
@@ -334,21 +349,21 @@ class VerificationProcess:
                     "tipo": "formula",
                     "conteudo": (
                             r" \lambda = \frac{h}{t_w} \Rightarrow \frac{" +
-                            f"{self.h_text.magnitude:.{self.casa_decimal_comprimento}f}" + r"}{" + f"{self.tw_text.magnitude:.{self.casa_decimal_comprimento}f}" + r"} = " + f"{lambda_sf:.2f}"
+                            f"{self.h_text.magnitude:.{self.casa_decimal_comprimento}f}" + r"}{" + f"{self.tw_text.magnitude:.{self.casa_decimal_comprimento}f}" + r"} = " + f"{lambda_sf.magnitude:.2f}"
                     )
                 },
                 {
                     "tipo": "formula",
                     "conteudo": (
                             r" \lambda_p = 1.1 * \sqrt{\frac{k_v * E}{f_y}} \Rightarrow "
-                            r"1.1 * \sqrt{\frac{5.34 * " + f"{self.e.magnitude:.{self.casa_decimal_pressao}f}" + r"}{" + f"{self.fy.magnitude:.{self.casa_decimal_pressao}f}" + r"}} = " + f"{lambda_p:.2f}"
+                            r"1.1 * \sqrt{\frac{5.34 * " + f"{self.e.magnitude:.{self.casa_decimal_pressao}f}" + r"}{" + f"{self.fy.magnitude:.{self.casa_decimal_pressao}f}" + r"}} = " + f"{lambda_p.magnitude:.2f}"
                     )
                 },
                 {
                     "tipo": "formula",
                     "conteudo": (
                             r"\lambda_r = 1.37 * \sqrt{\frac{k_v * E}{f_y}} \Rightarrow "
-                            r"1.37 * \sqrt{\frac{5.34 * " + f"{self.e.magnitude:.{self.casa_decimal_pressao}f}" + r"}{" + f"{self.fy.magnitude:.{self.casa_decimal_pressao}f}" + r"}} = " + f"{lambda_r:.2f}"
+                            r"1.37 * \sqrt{\frac{5.34 * " + f"{self.e.magnitude:.{self.casa_decimal_pressao}f}" + r"}{" + f"{self.fy.magnitude:.{self.casa_decimal_pressao}f}" + r"}} = " + f"{lambda_r.magnitude:.2f}"
                     )
                 },
                 {"tipo": "paragrafo", "conteudo": "\n Área efetiva do cisalhamento: \n "},
@@ -363,7 +378,7 @@ class VerificationProcess:
                     "tipo": "formula",
                     "conteudo": (
                             r"V_{pl} = 0.6 * A_w * f_y \Rightarrow 0.6 * " +
-                            f"{aw:.2f} * {self.fy.magnitude:.{self.casa_decimal_pressao}f} = {vpl:.{self.casa_decimal_forca}f}"
+                            f"{aw.magnitude:.{self.casa_decimal_area}f} * {self.fy.magnitude:.{self.casa_decimal_pressao}f} = {vpl:.{self.casa_decimal_forca}f}"
                     )
                 },
                 {"tipo": "paragrafo", "conteudo": "\n  Verificando a condição: \n "},
@@ -407,17 +422,21 @@ class VerificationProcess:
         if lambda_sf <= lambda_p:
             vrd = vpl / self.y_um
             status_lambda = r"\lambda \le \lambda_{p} "
-            lambda_texto = r"V_{rd} = \frac{V_{pl}}{\gamma_1} \Rightarrow \frac{" + f"{vpl:.{self.casa_decimal_forca}f}" + r"}{" + f"{self.y_um}" + r"} = " + f"{vrd:.{self.casa_decimal_forca}f}"
+            lambda_texto = r"V_{rd} = \frac{V_{pl}}{\gamma_1} \Rightarrow \frac{" + f"{vpl.magnitude:.{self.casa_decimal_forca}f}" + r"}{" + f"{self.y_um}" + r"} = " + f"{vrd:.{self.casa_decimal_forca}f}"
 
         elif lambda_p < lambda_sf <= lambda_r:
             vrd = (lambda_p / lambda_sf) * (vpl / self.y_um)
             status_lambda = r"\lambda_{p} \le \lambda_{} \le \lambda_{r}  "
-            lambda_texto = r"V_{rd} = \frac{\lambda_{p} * V_{pl}}{\lambda * \gamma_1} \Rightarrow " + r"\frac{" + f"{lambda_p:.2f} * {vpl:.{self.casa_decimal_forca}f}" + r"}{" + f"{lambda_sf:.2f} * {self.y_um}" + r"} = " + f"{vrd:.{self.casa_decimal_forca}f}"
+            lambda_texto = (r"V_{rd} = \frac{\lambda_{p} * V_{pl}}{\lambda * \gamma_1} \Rightarrow " + r"\frac{" +
+                            f"{lambda_p:.2f} * {vpl.magnitude:.{self.casa_decimal_forca}f}" + r"}{" +
+                            f"{lambda_sf:.2f} * {self.y_um}" + r"} = " + f"{vrd:.{self.casa_decimal_forca}f}")
 
         elif lambda_sf >= lambda_r:
             vrd = 1.24 * ((lambda_p / lambda_sf) ** 2) * (vpl / self.y_um)
             status_lambda = r"\lambda_{} \ge \lambda_{r} "
-            lambda_texto = r"V_{rd} = 1.24 * \left( \frac{\lambda_{p}}{\lambda} \right)^2 * \frac{V_{pl}}{\gamma_1} \Rightarrow " + f"1.24 * \\left( \\frac{{{lambda_p}}}{{{lambda_sf}}} \\right)^2 * " + f"\\frac{{{vpl:.{self.casa_decimal_forca}f}}}{{{self.y_um}}} = {vrd:.{self.casa_decimal_forca}f}"
+            lambda_texto = (r"V_{rd} = 1.24 * \left( \frac{\lambda_{p}}{\lambda} \right)^2 * \frac{V_{pl}}{\gamma_1} \Rightarrow " +
+                            f"1.24 * \\left( \\frac{{{lambda_p}}}{{{lambda_sf}}} \\right)^2 * "
+                            + f"\\frac{{{vpl.magnitude:.{self.casa_decimal_forca}f}}}{{{self.y_um}}} = {vrd:.{self.casa_decimal_forca}f}")
 
         passou = self.fcy <= vrd  # verificando
         status_texto = r" \textcolor{ForestGreen}{Aprovado}" if passou else r"\textcolor{red}{Reprovado}"
@@ -430,28 +449,32 @@ class VerificationProcess:
                     "tipo": "formula",
                     "conteudo": (
                             r"\lambda = \frac{bf*0.5}{tf} \Rightarrow \frac{" +
-                            f"{self.bf_text.magnitude:.{self.casa_decimal_comprimento}f} * 0.5" + r"}{" + f"{self.tf_text.magnitude:.{self.casa_decimal_comprimento}f}" + r"} = " + f"{lambda_sf:.2f}"
+                            f"{self.bf_text.magnitude:.{self.casa_decimal_comprimento}f} * 0.5" + r"}{" +
+                            f"{self.tf_text.magnitude:.{self.casa_decimal_comprimento}f}" + r"} = " + f"{lambda_sf:.2f}"
                     )
                 },
                 {
                     "tipo": "formula",
                     "conteudo": (
                             r"\lambda_p = 1.1 * \sqrt{\frac{k_v * E}{f_y}} \Rightarrow "
-                            r"1.1 * \sqrt{\frac{5.34 * " + f"{self.e.magnitude:.{self.casa_decimal_pressao}f}" + r"}{" + f"{self.fy.magnitude:.{self.casa_decimal_pressao}f}" + r"}} = " + f"{lambda_p:.2f}"
+                            r"1.1 * \sqrt{\frac{5.34 * " + f"{self.e.magnitude:.{self.casa_decimal_pressao}f}" +
+                            r"}{" + f"{self.fy.magnitude:.{self.casa_decimal_pressao}f}" + r"}} = " + f"{lambda_p:.2f}"
                     )
                 },
                 {
                     "tipo": "formula",
                     "conteudo": (
                             r"\lambda_r = 1.37 * \sqrt{\frac{k_v * E}{f_y}} \Rightarrow "
-                            r"1.37 * \sqrt{\frac{5.34 * " + f"{self.e.magnitude:.{self.casa_decimal_pressao}f}" + r"}{" + f"{self.fy.magnitude:.{self.casa_decimal_pressao}f}" + r"}} = " + f"{lambda_r:.2f}"
+                            r"1.37 * \sqrt{\frac{5.34 * " + f"{self.e.magnitude:.{self.casa_decimal_pressao}f}" +
+                            r"}{" + f"{self.fy.magnitude:.{self.casa_decimal_pressao}f}" + r"}} = " + f"{lambda_r:.2f}"
                     )
                 },
                 {"tipo": "paragrafo", "conteudo": "\n Área efetiva do cisalhamento: \n "},
                 {
                     "tipo": "formula",
                     "conteudo": (
-                            r"A_w = 2 * b_f * t_f \Rightarrow 2 * " + f"{self.bf_text.magnitude:.{self.casa_decimal_comprimento}f} * {self.tf_text.magnitude:.{self.casa_decimal_comprimento}f} = {aw:.2f}"
+                            r"A_w = 2 * b_f * t_f \Rightarrow 2 * " +
+                            f"{self.bf_text.magnitude:.{self.casa_decimal_comprimento}f} * {self.tf_text.magnitude:.{self.casa_decimal_comprimento}f} = {aw:.2f}"
                     )
                 },
                 {"tipo": "paragrafo", "conteudo": "\n Força cortante correspondente a plastificação da mesa: \n "},
@@ -459,7 +482,7 @@ class VerificationProcess:
                     "tipo": "formula",
                     "conteudo": (
                             r"V_{pl} = 0.6 * A_w * f_y \Rightarrow 0.6 * " +
-                            f"{aw:.2f} * {self.fy.magnitude:.{self.casa_decimal_pressao}f} = {vpl:.{self.casa_decimal_forca}f}"
+                            f"{aw.magnitude:.{self.casa_decimal_area}f} * {self.fy.magnitude:.{self.casa_decimal_pressao}f} = {vpl:.{self.casa_decimal_forca}f}"
                     )
                 },
                 {"tipo": "paragrafo", "conteudo": "\n  Verificando a condição: \n "},
@@ -505,7 +528,7 @@ class VerificationProcess:
         if lambda_flt <= lambda_flt_p:
             mrd_flt = mpl_flt / self.y_um
             status_lambda_flt = r"\lambda \le \lambda_{flt} "
-            lambda_flt_text = r"M_{rd} = \frac{M_{pl}}{\gamma_1} \Rightarrow \frac{" + f"{mpl_flt:.{self.casa_decimal_momento}f}" + r"}{" + f"{self.y_um}" + r"} = " + f"{mrd_flt:.{self.casa_decimal_momento}f}"
+            lambda_flt_text = r"M_{rd} = \frac{M_{pl}}{\gamma_1} \Rightarrow \frac{" + f"{mpl_flt.magnitude:.{self.casa_decimal_momento}f}" + r"}{" + f"{self.y_um}" + r"} = " + f"{mrd_flt:.{self.casa_decimal_momento}f}"
         elif lambda_flt_p < lambda_flt <= lambda_flt_r:
             mrd_flt = (1 / self.y_um) * (
                     mpl_flt - ((mpl_flt - mr_flt) * ((lambda_flt - lambda_flt_p) / (lambda_flt_r - lambda_flt_p))))
@@ -527,7 +550,7 @@ class VerificationProcess:
             status_mcr_flt = (
                 rf"M_{{cr}} = \frac{{C_b * \pi^2 * E * I_y}}{{L_b^2}} * \sqrt{{\frac{{C_w}}{{I_y}}"
                 rf" * \left(1 + 0.039 * \frac{{I_t * L_b^2}}{{C_w}}\right)}} \Rightarrow "
-                rf"\frac{{{self.cb} * \pi^2 * {self.e:.{self.casa_decimal_pressao}f} * {self.i_y_text:.{self.casa_decimal_inercia}f}}}"
+                rf"\frac{{{self.cb} * \pi^2 * {self.e.magnitude:.{self.casa_decimal_pressao}f} * {self.i_y_text.magnitude:.{self.casa_decimal_inercia}f}}}"
                 rf"{{{self.flb.magnitude:.{self.casa_decimal_comprimento}f}^2}} * \sqrt{{\frac{{{self.cw_text.magnitude:.{self.casa_decimal_six}f}}}{{{self.i_y_text.magnitude:.{self.casa_decimal_inercia}f}}}"
                 rf" * \left(1 + 0.039 * \frac{{{self.i_t_text.magnitude:.{self.casa_decimal_inercia}f} * {self.flb.magnitude:.{self.casa_decimal_comprimento}f}^2}}"
                 rf"{{{self.cw_text.magnitude:.{self.casa_decimal_six}f}}}\right)}} = {mcr_flt:.{self.casa_decimal_momento}f}")
@@ -619,8 +642,8 @@ class VerificationProcess:
                 {
                     "tipo": "formula",
                     "conteudo": (
-                            r"\lambda_{LT} = \frac{L_b}{r_y} \Rightarrow \frac{" + f"{self.flb:.{self.casa_decimal_comprimento}f}" + r"}{" +
-                            f"{self.r_y_text:.{self.casa_decimal_comprimento}f}" + r"} = " + f"{lambda_flt:.2f}"
+                            r"\lambda_{LT} = \frac{L_b}{r_y} \Rightarrow \frac{" + f"{self.flb.magnitude:.{self.casa_decimal_comprimento}f}" + r"}{" +
+                            f"{self.r_y_text.magnitude:.{self.casa_decimal_comprimento}f}" + r"} = " + f"{lambda_flt:.2f}"
                     )
                 },
                 {
@@ -629,7 +652,7 @@ class VerificationProcess:
                             r"\lambda_{p} = 1.76 * \sqrt{\frac{E}{f_y}} \Rightarrow 1.76 * \sqrt{\frac{" +
                             f"{self.e.magnitude:.{self.casa_decimal_pressao}f}" + r"}{" +
                             f"{self.fy.magnitude:.{self.casa_decimal_pressao}f}" + r"}} = " +
-                            f"{lambda_flt_p:.2f}"
+                            f"{lambda_flt_p.magnitude:.2f}"
                     )
                 },
                 {
@@ -648,7 +671,7 @@ class VerificationProcess:
                             r"\lambda_{r} = 1.38 * C_b * \sqrt{\frac{I_y * I_t}{r_y * I_t * \beta}}"
                             r" * \sqrt{1 + \sqrt{1 + \frac{27 * C_w * \beta^2}{C_b^2 * I_y}}}"
                             r" \Rightarrow " +
-                            f"{lambda_flt_r:.2f}"
+                            f"{lambda_flt_r.magnitude:.2f}"
                     )
                 },
                 {
@@ -688,21 +711,21 @@ class VerificationProcess:
                     "tipo": "formula",
                     "conteudo": (
                         rf"\lambda = \frac{{b_f/2}}{{t_f}} \Rightarrow \frac{{{self.bf_text.magnitude:.{self.casa_decimal_comprimento}f}/2}}{{{self.tf_text.magnitude:.{self.casa_decimal_comprimento}f}}} = "
-                        rf"{lambda_flm:.{self.casa_decimal_momento}f}"
+                        rf"{lambda_flm.magnitude:.{self.casa_decimal_momento}f}"
                     )
                 },
                 {
                     "tipo": "formula",
                     "conteudo": (
                         rf"\lambda_p = 0.38 * \sqrt{{\frac{{E}}{{f_y}}}} \Rightarrow 0.38 * \sqrt{{\frac{{{self.e.magnitude:.{self.casa_decimal_pressao}f}}}{{{self.fy.magnitude:.{self.casa_decimal_pressao}f}}}}} = "
-                        rf"{lambda_flm_p:.{self.casa_decimal_momento}f}"
+                        rf"{lambda_flm_p.magnitude:.{self.casa_decimal_momento}f}"
                     )
                 },
                 {
                     "tipo": "formula",
                     "conteudo": (
                         rf"\lambda_r = 0.83 * \sqrt{{\frac{{E}}{{f_y - 0.3 f_y}}}} \Rightarrow 0.83 * \sqrt{{\frac{{{self.e.magnitude:.{self.casa_decimal_pressao}f}}}{{{self.fy.magnitude:.{self.casa_decimal_pressao}f} - 0.3 * {self.fy.magnitude:.{self.casa_decimal_pressao}f}}}}} = "
-                        rf"{lambda_flm_r:.{self.casa_decimal_momento}f}"
+                        rf"{lambda_flm_r.magnitude:.{self.casa_decimal_momento}f}"
                     )
                 },
                 {
@@ -740,21 +763,21 @@ class VerificationProcess:
                     "tipo": "formula",
                     "conteudo": (
                         rf"\lambda_w = \frac{{d}}{{t_w}} \Rightarrow \frac{{{self.d_l_text.magnitude:.{self.casa_decimal_comprimento}f}}}{{{self.tw_text.magnitude:.{self.casa_decimal_comprimento}f}}} = "
-                        rf"{lambda_fla:.{self.casa_decimal_momento}f}"
+                        rf"{lambda_fla.magnitude:.{self.casa_decimal_momento}f}"
                     )
                 },
                 {
                     "tipo": "formula",
                     "conteudo": (
                         rf"\lambda_p = 3.76 * \sqrt{{\frac{{E}}{{f_y}}}} \Rightarrow 3.76 * \sqrt{{\frac{{{self.e.magnitude:.{self.casa_decimal_pressao}f}}}{{{self.fy.magnitude:.{self.casa_decimal_pressao}f}}}}} = "
-                        rf"{lambda_fla_p:.{self.casa_decimal_momento}f}"
+                        rf"{lambda_fla_p.magnitude:.{self.casa_decimal_momento}f}"
                     )
                 },
                 {
                     "tipo": "formula",
                     "conteudo": (
                         rf"\lambda_r = 5.7 * \sqrt{{\frac{{E}}{{f_y}}}} \Rightarrow 5.7 * \sqrt{{\frac{{{self.e.magnitude:.{self.casa_decimal_pressao}f}}}{{{self.fy.magnitude:.{self.casa_decimal_pressao}f}}}}} = "
-                        rf"{lambda_fla_r:.{self.casa_decimal_momento}f}"
+                        rf"{lambda_fla_r.magnitude:.{self.casa_decimal_momento}f}"
                     )
                 },
                 {
@@ -796,6 +819,11 @@ class VerificationProcess:
                 {
                     "tipo": "formula",
                     "conteudo": rf"M_{{rd}} = \min \left( M_{{rd,flt}},\ M_{{rd,flm}},\ M_{{rd,fla}},\ M_{{frc}} \right) \Rightarrow "
+
+                },
+                {
+                    "tipo": "formula",
+                    "conteudo":
                                 rf"\min \left( {mrd_flt.magnitude:.{self.casa_decimal_momento}f},\ "
                                 rf"{mrd_flm.magnitude:.{self.casa_decimal_momento}f},\ "
                                 rf"{mrd_fla.magnitude:.{self.casa_decimal_momento}f},\ "
@@ -878,21 +906,21 @@ class VerificationProcess:
                     "tipo": "formula",
                     "conteudo": (
                         rf"\lambda = \frac{{b_f}} {{2 t_f}} \Rightarrow \frac{{{self.bf_text.magnitude:.{self.casa_decimal_comprimento}f}}}{{2 * {self.tf_text.magnitude:.{self.casa_decimal_comprimento}f}}} = "
-                        rf"{lambda_flm:.2f}"
+                        rf"{lambda_flm.magnitude:.2f}"
                     )
                 },
                 {
                     "tipo": "formula",
                     "conteudo": (
                         rf"\lambda_p = 0.38 * \sqrt{{\frac{{E}}{{f_y}}}} \Rightarrow 0.38 * \sqrt{{\frac{{{self.e.magnitude:.{self.casa_decimal_pressao}f}}}{{{self.fy.magnitude:.{self.casa_decimal_pressao}f}}}}} = "
-                        rf"{lambda_flm_p:.2f}"
+                        rf"{lambda_flm_p.magnitude:.2f}"
                     )
                 },
                 {
                     "tipo": "formula",
                     "conteudo": (
                         rf"\lambda_r = 0.83 * \sqrt{{\frac{{E}}{{f_y - 0.3 f_y}}}} \Rightarrow 0.83 * \sqrt{{\frac{{{self.e.magnitude:.{self.casa_decimal_pressao}f}}}{{{(self.fy.magnitude - 0.3 * self.fy.magnitude):.{self.casa_decimal_pressao}f}}}}} = "
-                        rf"{lambda_flm_r:.2f}"
+                        rf"{lambda_flm_r.magnitude:.2f}"
                     )
                 },
                 {
@@ -1016,7 +1044,7 @@ class VerificationProcess:
         mrdy = self.moment_force_y()
         ec = self.combined_forces()
         try:
-            meu_relatorio = ReportGenerator(self.frame_name, self.save_path)
+            meu_relatorio = ReportGenerator(self.parent_mdi, self.frame_name, self.save_path)
             meu_relatorio.make_title() #gera o titulo
             meu_relatorio.add_calculo(nrdt[1])
             meu_relatorio.add_calculo(nrdc[1])
@@ -1027,13 +1055,10 @@ class VerificationProcess:
             meu_relatorio.add_calculo(ec[1])
             meu_relatorio.gerar_pdf()
             wx.MessageBox("Calculado com sucesso!", "Sucesso",wx.OK | wx.ICON_INFORMATION )
-            # print(ec[0])
             return ec[0]
-            # return True
         except Exception as error:
             wx.MessageBox(f"{error}", "Erro",wx.OK | wx.ICON_ERROR)
-            return False
-            # return ec[0]
+            return ec[0]
 
     def calculate_all(self):
         ec = self.combined_forces()

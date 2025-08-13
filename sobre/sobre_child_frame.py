@@ -1,76 +1,64 @@
 import wx
 import wx.adv
 import webbrowser
+from widget_class import StaticBox, LinkButton
 
 
 class SobreChildFrame(wx.MDIChildFrame):
 
     def __init__(self, parent):
         super().__init__(parent, -1, "Sobre", size=(300, 610), style=wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX)
-        self.SetMinSize((300, 610))
-        self.SetMaxSize((300, 610))
-        self.SetIcon(wx.Icon('icones/info.png', wx.BITMAP_TYPE_PNG))  # Definindo o ícone para o MDIFrame
+        # self.SetMinSize((300, 610))
+        # self.SetMaxSize((300, 610))
+        self.SetIcon(wx.Icon("icones/info.png", wx.BITMAP_TYPE_PNG))  # Definindo o ícone para o MDIFrame
 
-        panel = wx.Panel(self)
-        panel.SetBackgroundColour((255, 255, 255))
+        self.window_main_panel = wx.Panel(self)
+        self.main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        static_box_dev = wx.StaticBox(panel, label="Desenvolvido por:")
-        static_box_dev_sizer = wx.StaticBoxSizer(static_box_dev, wx.VERTICAL)
+        self.desenvolvido = StaticBox(self.window_main_panel, "Desenvolvido por :", orientation="vertical")
 
-        def botao_link_um(event):
-            webbrowser.open("https://www.youtube.com/@carloseduardobordin")
+        self.button_yt = LinkButton(self.desenvolvido, "Carlos Eduardo A. Bordin", "https://www.youtube.com/@carloseduardobordin", "icones/yt.png")
+        self.desenvolvido.widgets_add(self.button_yt, 0, False)
 
-        self.botao_link_um = wx.Button(panel, id=wx.ID_ANY, label='Carlos Eduardo A. Bordin')
-        self.botao_link_um.Bind(wx.EVT_BUTTON, botao_link_um)
-        self.botao_link_um.SetBitmapPosition(wx.LEFT)  # Ícone à esquerda do texto
-        self.botao_link_um.SetBitmap(wx.Bitmap("icones/yt.png", wx.BITMAP_TYPE_PNG))  # Define o ícone no botão
-        static_box_dev_sizer.Add(self.botao_link_um, 0, wx.ALL | wx.EXPAND, 5)
+        self.bibliotecas = StaticBox(self.window_main_panel, "Bibliotecas e ferramentas utilizadas :", orientation="vertical")
 
-        static_box_ref = wx.StaticBox(panel, label="Referências:")
-        static_box_ref_sizer = wx.StaticBoxSizer(static_box_ref, wx.VERTICAL)
+        self.b1 = LinkButton(self.bibliotecas, "wxPython", "https://wxpython.org/index.html", "icones/wxpython.png")
+        self.bibliotecas.widgets_add(self.b1, 0, False)
+        self.b2 = LinkButton(self.bibliotecas, "Pint", "https://pint.readthedocs.io/en/stable/")
+        self.bibliotecas.widgets_add(self.b2, 0, False)
+        self.b3 = LinkButton(self.bibliotecas, "Pandas", "https://pandas.pydata.org/", "icones/panda.png")
+        self.bibliotecas.widgets_add(self.b3, 0, False)
+        self.b4 = LinkButton(self.bibliotecas, "Openpyxl", "https://openpyxl.readthedocs.io/en/stable/")
+        self.bibliotecas.widgets_add(self.b4, 0, False)
+        self.b5 = LinkButton(self.bibliotecas, "Matplotlib", "https://matplotlib.org/", "icones/matplotlib.png")
+        self.bibliotecas.widgets_add(self.b5, 0, False)
+        self.b6 = LinkButton(self.bibliotecas, "Numpy", "https://numpy.org/", "icones/numpy.png")
+        self.bibliotecas.widgets_add(self.b6, 0, False)
+        self.b7 = LinkButton(self.bibliotecas, "PyLaTeX", "https://jeltef.github.io/PyLaTeX/current/")
+        self.bibliotecas.widgets_add(self.b7, 0, False)
+        self.b8 = LinkButton(self.bibliotecas, "PyInstaller", "https://pyinstaller.org/en/stable/", "icones/pyinstaller.png")
+        self.bibliotecas.widgets_add(self.b8, 0, False)
+        self.b9 = LinkButton(self.bibliotecas, "MikTex", "https://miktex.org/", "icones/mk.png")
+        self.bibliotecas.widgets_add(self.b9, 0, False)
+        self.b10 = LinkButton(self.bibliotecas, "Inno Setup", "https://jrsoftware.org/isinfo.php", "icones/jr.png")
+        self.bibliotecas.widgets_add(self.b10, 0, False)
 
-        self.botao_com_link(panel, static_box_ref_sizer, "REF 1", "http://www.example.com")
-        self.botao_com_link(panel, static_box_ref_sizer, "REF 2", "http://www.example.com")
-        self.botao_com_link(panel, static_box_ref_sizer, "REF 3", "http://www.example.com")
-        self.botao_com_link(panel, static_box_ref_sizer, "REF 4", "http://www.example.com")
-
-        static_box_bibliotecas = wx.StaticBox(panel, label="Bibliotecas:")
-        static_box_bibliotecas_sizer = wx.StaticBoxSizer(static_box_bibliotecas, wx.VERTICAL)
-
-        self.botao_com_link(panel, static_box_bibliotecas_sizer, "wxPython", "https://www.wxpython.org/")
-        self.botao_com_link(panel, static_box_bibliotecas_sizer, "NumPy", "https://numpy.org/")
-        self.botao_com_link(panel, static_box_bibliotecas_sizer, "Matplotlib", "https://matplotlib.org/")
-        self.botao_com_link(panel, static_box_bibliotecas_sizer, "Pyinstaller", "https://pyinstaller.org/en/stable/")
-        self.botao_com_link(panel, static_box_bibliotecas_sizer, "Inno Setup", "https://jrsoftware.org/isinfo.php")
-
-        static_box_report = wx.StaticBox(panel, label="Reportar:")
-        static_box_report_sizer = wx.StaticBoxSizer(static_box_report, wx.VERTICAL)
-
-        self.report = wx.StaticText(panel,
+        self.report_box = StaticBox(self.window_main_panel, "Bibliotecas e ferramentas utilizadas :",
+                                     orientation="vertical")
+        self.report = wx.StaticText(self.report_box,
                                     label="Caso você identifique algum bug ou inconsistência nos cálculos do software,\npor favor, entre em contato pelo e-mail: \n",
                                     size=(200, -1))
-        self.hyperlink = wx.adv.HyperlinkCtrl(panel, label="carlosbordin.pf023@academico.ifsul.edu.br",
+        self.report_box.widgets_add(self.report, 0, False)
+
+        self.hyperlink = wx.adv.HyperlinkCtrl(self.report_box, label="carlosbordin.pf023@academico.ifsul.edu.br",
                                               url="mailto:carlosbordin.pf023@academico.ifsul.edu.br")
-        self.report_obrigado = wx.StaticText(panel, label="Agradecemos sua colaboração.",size=(200, -1))
-
-        static_box_report_sizer.Add(self.report, 0, wx.ALL | wx.EXPAND, 5)
-        static_box_report_sizer.Add(self.hyperlink, 0, wx.ALL | wx.EXPAND, 5)
-        static_box_report_sizer.Add(self.report_obrigado, 0, wx.ALL | wx.EXPAND, 5)
-
-        # cria o sizer principal!
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(static_box_dev_sizer, 0, wx.ALL | wx.EXPAND, 5)
-        main_sizer.Add(static_box_ref_sizer, 0, wx.ALL | wx.EXPAND, 5)
-        main_sizer.Add(static_box_bibliotecas_sizer, 0, wx.ALL | wx.EXPAND, 5)
-        main_sizer.Add(static_box_report_sizer, 0, wx.ALL | wx.EXPAND, 5)
+        self.report_box.widgets_add(self.hyperlink, 0, False)
+        self.report_obrigado = wx.StaticText(self.report_box, label="Agradecemos sua colaboração.",size=(200, -1))
+        self.report_box.widgets_add(self.report_obrigado, 0, False)
 
 
-        panel.SetSizer(main_sizer)
-    #criando funcao de botao que abre link
-    def botao_com_link(self, panel, sizer, label, link):
-        # Cria o botão
-        botao = wx.Button(panel, label=label)
-        # Associa o evento de clique do botão à função que abre o link
-        botao.Bind(wx.EVT_BUTTON, lambda event: webbrowser.open(link))
-        # Adiciona o botão ao sizer
-        sizer.Add(botao, 0, wx.ALL | wx.EXPAND, 5)
+
+        self.main_sizer.Add(self.desenvolvido, proportion=0, flag=wx.ALL | wx.EXPAND, border=5)
+        self.main_sizer.Add(self.bibliotecas, proportion=0, flag=wx.ALL | wx.EXPAND, border=5)
+        self.main_sizer.Add(self.report_box, proportion=0, flag=wx.ALL | wx.EXPAND, border=5)
+        self.window_main_panel.SetSizer(self.main_sizer)

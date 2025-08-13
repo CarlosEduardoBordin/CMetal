@@ -7,14 +7,23 @@ from pylatex.utils import NoEscape
 
 
 class ReportGenerator:
-    def __init__(self, file_name, path):
+    def __init__(self,  parent_mdi : wx.MDIParentFrame , file_name, path):
         # self.frame_name = frame_name
         self.file_name = file_name
         self.path = path
+
+        papel = parent_mdi.get_papel()
+        orientacao = parent_mdi.get_orientacao()
+        if orientacao: value = True
+        else: value = False
+
         geometria = {
+            "paper": papel,
+            "landscape": value,
             "tmargin": "2cm",
             "lmargin": "2cm"
         }
+
         self.doc = Document(self.file_name, geometry_options=geometria)
         self.doc.preamble.append(NoEscape(r"\usepackage[dvipsnames]{xcolor}"))
         self.doc.preamble.append(NoEscape(r"\usepackage{parskip}"))  # Pacote para espaço sem indentação

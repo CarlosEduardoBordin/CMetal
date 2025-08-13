@@ -1,6 +1,5 @@
 import wx
 import wx.adv
-import re #biblioteca de expressoes
 from pint import UnitRegistry
 from metalica.edit_child_frame import EditChildFrame
 from widget_class import StaticBox , TextBoxVrf, SaveBox, StaticTextTune
@@ -21,9 +20,10 @@ class SteelChildFrame(wx.MDIChildFrame):
     def __init__(self, parent, frame_name):
         #parametros iniciais da janela
         super().__init__(parent, id=wx.ID_ANY, title = frame_name,
-                         pos=(0,0), size = (750,740), style = wx.DEFAULT_FRAME_STYLE)
+                         pos=(0,0), size = (800,740), style = wx.DEFAULT_FRAME_STYLE)
         self.perfil_list = []
         self.parent = self.GetParent() #atributo parente da janela
+        # self.SetIcon(wx.Icon("icones/perfil.bmp"))
         #------------------------------------------------funcoes dos botoes
         self.data_steel_type = ReadExcelFile("steel.xlsx","tipo_de_aco")
         self.data_steel_lmn = ReadExcelFile("steel.xlsx","laminado")
@@ -41,7 +41,7 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.factor_multiplier_six_elevated = {"mm^6", "cm^6", "m^6"}
         self.factor_multiplier_force = {"N", "kN", "MN"}
         self.factor_multiplier_moment = {"N*m", "KN*m", "MN*m"}
-        self.factor_multiplier_press = {"Pa", "kPa", "MPa", "GPa"}
+        self.factor_multiplier_press = {"N/m^2", "kN/m^2", "MN/m^2", "GN/m^2"}
 
 
         # self.Bind(wx.EVT_CLOSE, self.on_close_steel_child)
@@ -157,20 +157,17 @@ class SteelChildFrame(wx.MDIChildFrame):
             aef = AefValuesConfiguration(parent,self,f"Área líquida efetiva Aef - {frame_name}")#
             aef.Show()
 
-        def on_teste(event):
-            # teste = self.parent.get_cb()
-            print(self.get_aef())
-
         def get_info(option_selected, aef):
             try:
                 fy = float(self.text_fy.get_value())
                 fu = float(self.text_fu.get_value())
-                e = float(parent.get_e_modulo())
-                g = float(parent.get_g_modulo())
-                # e = unit_converter_dois(float(parent.get_e_modulo()), "Pa",
-                #                                 parent.get_unit_press()[0])
-                # g = unit_converter_dois(float(parent.get_g_modulo()), "Pa",
-                #                                 parent.get_unit_press()[0])
+
+                e = unit_converter_dois(float(parent.get_e_modulo()), "N/m^2",
+                                                parent.get_unit_press()[0])
+
+                g = unit_converter_dois(float(parent.get_g_modulo()), "N/m^2",
+                                                parent.get_unit_press()[0])
+
                 y_um = float(parent.get_y_um())
                 cb = float(self.get_cb()) #adm
                 lfx_value = unit_converter_dois(self.input_lfx.get_value(), parent.get_unit_lenght()[0],
@@ -230,7 +227,7 @@ class SteelChildFrame(wx.MDIChildFrame):
                                     fnc_value, fcx_value, fcy_value, mfx_value, mfy_value,
                                     y_um, g, e, cb]
                 transformed_list_perfil_data.extend(values_to_append)
-                print(transformed_list_perfil_data)
+                # print(transformed_list_perfil_data)
                 return transformed_list_perfil_data
             except Exception as e:
                 wx.MessageBox(f"Erro : {e}", "Erro", wx.OK | wx.ICON_ERROR)
@@ -248,13 +245,10 @@ class SteelChildFrame(wx.MDIChildFrame):
         # ureg = UnitRegistry()
 
         def on_calculate(event):
-            # try:
+            try:
                 aef = return_aef()
                 option_selected = self.select_steel_perfil.GetStringSelection()
                 a = get_info(option_selected, aef)
-                print((a[0]))
-                print(((a[1]) * ureg(parent.get_unit_lenght()[0])))
-
                 transformed_list_perfil_data = ((a[0]),((a[1]) * ureg(parent.get_unit_lenght()[0])) , (a[2]) * ureg(parent.get_unit_lenght()[0]), (a[3]) * ureg(parent.get_unit_lenght()[0]), (a[4]) * ureg(parent.get_unit_lenght()[0]),
                                                 (a[5]) * ureg(parent.get_unit_lenght()[0]), (a[6]) * ureg(parent.get_unit_lenght()[0]), (a[7]) * ureg(parent.get_unit_area()[0]), (a[8]) * ureg(parent.get_unit_inercia()[0]),
                                                 (a[9]) * ureg(parent.get_unit_volume()[0]), (a[10]) * ureg(parent.get_unit_lenght()[0]) , (a[11]) * ureg(parent.get_unit_volume()[0]), (a[12]) * ureg(parent.get_unit_inercia()[0]),
@@ -283,28 +277,64 @@ class SteelChildFrame(wx.MDIChildFrame):
                     # self.status_label.set_valueand_color("REPROVADO!",200, 20, 20)
                 self.box_status.Update()
                 self.box_status.Layout()
-            # except Exception as e:
-            #     wx.MessageBox(f"Erro : {e}", "Erro", wx.OK | wx.ICON_ERROR)
+            except Exception as e:
+                wx.MessageBox(f"Erro : {e}", "Erro", wx.OK | wx.ICON_ERROR)
 
 
         def on_calculate_all(event):
-            try:
+            # try:
                 self.clear_perfil_list()
                 steel_perfil_list = self.data_steel_lmn.return_value_by_one_col("BITOLA mm x kg/mgraus")
                 aef = return_aef()
 
                 for perfil in steel_perfil_list:
-                    transformed_list_perfil_data = get_info(perfil, aef)
+                    a = get_info(perfil, aef)
+                    print(f"////////////////////////////////////////// {perfil}")
+                    transformed_list_perfil_data = ((a[0]), ((a[1]) * ureg(parent.get_unit_lenght()[0])),
+                                                    (a[2]) * ureg(parent.get_unit_lenght()[0]),
+                                                    (a[3]) * ureg(parent.get_unit_lenght()[0]),
+                                                    (a[4]) * ureg(parent.get_unit_lenght()[0]),
+                                                    (a[5]) * ureg(parent.get_unit_lenght()[0]),
+                                                    (a[6]) * ureg(parent.get_unit_lenght()[0]),
+                                                    (a[7]) * ureg(parent.get_unit_area()[0]),
+                                                    (a[8]) * ureg(parent.get_unit_inercia()[0]),
+                                                    (a[9]) * ureg(parent.get_unit_volume()[0]),
+                                                    (a[10]) * ureg(parent.get_unit_lenght()[0]),
+                                                    (a[11]) * ureg(parent.get_unit_volume()[0]),
+                                                    (a[12]) * ureg(parent.get_unit_inercia()[0]),
+                                                    (a[13]) * ureg(parent.get_unit_volume()[0]),
+                                                    (a[14]) * ureg(parent.get_unit_lenght()[0]),
+                                                    (a[15]) * ureg(parent.get_unit_volume()[0]),
+                                                    (a[16]) * ureg(parent.get_unit_lenght()[0]),
+                                                    (a[17]) * ureg(parent.get_unit_inercia()[0]), (a[18]), (a[19]),
+                                                    (a[20]) * ureg(parent.get_unit_six()[0]), (a[21]), (a[22]),
+                                                    (a[23]) * ureg(parent.get_unit_press()[0]),
+                                                    (a[24]) * ureg(parent.get_unit_press()[0]),
+                                                    (a[25]) * ureg(parent.get_unit_lenght()[0]),
+                                                    (a[26]) * ureg(parent.get_unit_lenght()[0]),
+                                                    (a[27]) * ureg(parent.get_unit_lenght()[0]),
+                                                    (a[28]) * ureg(parent.get_unit_lenght()[0]),
+                                                    (a[29]) * ureg(parent.get_unit_force()[0]),
+                                                    (a[30]) * ureg(parent.get_unit_force()[0]),
+                                                    (a[31]) * ureg(parent.get_unit_force()[0]),
+                                                    (a[32]) * ureg(parent.get_unit_force()[0]),
+                                                    (a[33]) * ureg(parent.get_unit_moment()[0]),
+                                                    (a[34]) * ureg(parent.get_unit_moment()[0]), (a[35]),
+                                                    (a[36]) * ureg(parent.get_unit_press()[0]),
+                                                    (a[37]) * ureg(parent.get_unit_press()[0]), (a[38])
+                                                    )
+
                     self.data = VerificationProcess(parent, *transformed_list_perfil_data, None,None)
+                    self.data.calculate_all()
+
                     resultado = [perfil, self.data.calculate_all()]
                     self.append_perfil_list(resultado)
                     print(transformed_list_perfil_data)
-                    print(type(perfil))
 
                 lista_aprovados_reprovados = PerfilList(parent, self, f"Lista de perfis - {frame_name}")
                 lista_aprovados_reprovados.Show()
-            except Exception as e:
-                wx.MessageBox(f"Erro : {e}", "Erro", wx.OK | wx.ICON_ERROR)
+            # except Exception as e:
+            #     wx.MessageBox(f"Erro : {e}", "Erro", wx.OK | wx.ICON_ERROR)
 
 
         #------------------------------------------------
@@ -327,13 +357,13 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.btn_edit = wx.Button(self.box_steel_selection_select_menu, label="Editar")
         self.box_steel_selection_select_menu.widgets_add(self.btn_edit, 0, False)
         self.btn_edit.Bind(wx.EVT_BUTTON, load_edit_child_frame)
-        self.label_fy = wx.StaticText(self.box_steel_selection_select_menu,id=wx.ID_ANY, label="fy (MPa)")
+        self.label_fy = wx.StaticText(self.box_steel_selection_select_menu,id=wx.ID_ANY, label="fy (MN/m^2)")
         self.box_steel_selection_select_menu.widgets_add(self.label_fy, 0, False)
         self.text_fy = TextBoxVrf(self.box_steel_selection_select_menu, value = "0", only_numeric=True)
         self.box_steel_selection_select_menu.widgets_add(self.text_fy, 0, False)
         #quebra de linha vertical
         self.box_steel_selection_select_menu.widgets_add(wx.StaticLine(self.box_steel_selection_select_menu, style=wx.LI_VERTICAL), 0,False)
-        self.label_fu = wx.StaticText(self.box_steel_selection_select_menu,id=wx.ID_ANY, label="fu (MPa)")
+        self.label_fu = wx.StaticText(self.box_steel_selection_select_menu,id=wx.ID_ANY, label="fu (MN/m^2)")
         self.box_steel_selection_select_menu.widgets_add(self.label_fu, 0, False)
         self.text_fu = TextBoxVrf(self.box_steel_selection_select_menu, value = "0", only_numeric=True)
         self.box_steel_selection_select_menu.widgets_add(self.text_fu, 0,False)

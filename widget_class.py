@@ -1,5 +1,8 @@
 import wx
+import wx.adv
 import os
+import webbrowser
+
 #criando uma classe para os wx.StaticBox rotulo - orientacao do sizer
 class StaticBox(wx.Panel):
     #criacao do box
@@ -93,6 +96,16 @@ class StaticTextTune(wx.StaticText):
         self.static_text.SetLabel(label= text)
         self.static_text.SetForegroundColour(wx.Colour(red, green,blue))
 
+class LinkButton(wx.Button):
+
+    def __init__(self, parent, label, link, icone = None, **kwargs):
+        super().__init__(parent, label=label, **kwargs)
+        self.link = link
+
+        self.Bind(wx.EVT_BUTTON, lambda event: webbrowser.open(self.link))
+        if icone:
+            self.SetBitmapPosition(wx.LEFT)
+            self.SetBitmap(wx.Bitmap(icone, wx.BITMAP_TYPE_PNG))
 
 
 class SaveBox(wx.FileDialog):
