@@ -7,12 +7,12 @@ from table_manipulation import WriteExcelFile
 class ConfiguracoesChildFrame(wx.MDIChildFrame):
     def __init__(self, parent):
         # Inicializa a janela filha com o título nome_formulario
-        super().__init__(parent, -1, "Configurações", size=(500, 560), style=wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX)
+        super().__init__(parent, -1, "Configurações", size=(500, 670), style=wx.DEFAULT_FRAME_STYLE & ~wx.MAXIMIZE_BOX)
         self.parent = parent
         self.SetMinSize((550, 520))
-        self.SetMaxSize((600, 600))
+        self.SetMaxSize((600, 700))
 
-        self.SetIcon( wx.Icon('icones/cfg.png', wx.BITMAP_TYPE_PNG))  # Definindo o ícone para o MDIFrame
+        self.SetIcon( wx.Icon("icones/cfg.png", wx.BITMAP_TYPE_PNG))  # Definindo o ícone para o MDIFrame
 
         self.window_main_panel = wx.Panel(self)
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -25,11 +25,17 @@ class ConfiguracoesChildFrame(wx.MDIChildFrame):
             self.combo_box_si_six.SetValue("m^6")
             self.combo_box_si_force.SetValue("N")
             self.combo_box_si_moment.SetValue("N*m")
-            self.combo_box_si_press.SetValue("Pa")
+            self.combo_box_si_press.SetValue("N/m^2")
             self.input_e.SetValue("200000000000")
             self.input_g.SetValue("77000000000")
+            self.combo_papel.SetValue("a4paper")
+            self.checkbox_abrir_apos_gerar.SetValue(True)
+            self.checkbox_h.SetValue(True)
+
 
         def on_btn_apl(event):
+            if self.checkbox_h.IsChecked(): value = True
+            else: value = False
             #modulos
             self.parent.set_unit_lenght(self.combo_box_si_lenght.GetValue(), self.count_box_lenght.GetValue())
             self.parent.set_unit_area(self.combo_box_si_area.GetValue(), self.count_box_area.GetValue())
@@ -41,8 +47,15 @@ class ConfiguracoesChildFrame(wx.MDIChildFrame):
             self.parent.set_unit_press(self.combo_box_si_press.GetValue(), self.count_box_press.GetValue())
             self.parent.set_e_modulo( self.input_e.get_value())
             self.parent.set_g_modulo(self.input_g.get_value())
+            self.parent.set_papel(self.combo_papel.GetValue())
+            self.parent.set_orientacao(value)
+            self.parent.set_open_file(self.checkbox_abrir_apos_gerar.GetValue())
+
+
 
         def on_btn_save(event):
+            if self.checkbox_h.IsChecked(): value = True
+            else: value = False
             data = [["Comprimento" , f"{self.combo_box_si_lenght.GetValue()}" , f"{self.count_box_lenght.GetValue()}"],
                     ["Area" , f"{self.combo_box_si_area.GetValue()}", f"{self.count_box_area.GetValue()}"],
                     ["Volume", f"{self.combo_box_si_volume.GetValue()}", f"{self.count_box_volume.GetValue()}"],
@@ -52,7 +65,8 @@ class ConfiguracoesChildFrame(wx.MDIChildFrame):
                     ["Momento", f"{self.combo_box_si_moment.GetValue()}", f"{self.count_box_moment.GetValue()}"],
                     ["Pressao", f"{self.combo_box_si_press.GetValue()}", f"{self.count_box_press.GetValue()}"],
                     ["e", f"{self.input_e.get_value()}"], ["g", f"{self.input_g.get_value()}"],
-                    ["y1", f"{self.input_y_um.get_value()}"]
+                    ["y1", f"{self.input_y_um.get_value()}"] , ["papel", f"{self.combo_papel.GetValue()}"],
+                    ["orientacao", f"{value}"], ["file", f"{self.set_open_file.GetValue()}"]
                     ]
             file_save_name = WriteExcelFile("steel.xlsx")
             file_save_name.save_data_to_file("unidades", data, 3, ["Tipo", "Unidade", "Casas"])
@@ -143,7 +157,7 @@ class ConfiguracoesChildFrame(wx.MDIChildFrame):
         #p/a
         self.press_text = wx.StaticText(self.box_si, id=wx.ID_ANY, label="Unidade de pressão: ")
         self.box_si.widgets_add(self.press_text, 0, False)
-        si_values_press = ["Pa", "kPa", "MPa", "GPa"]
+        si_values_press = ["N/m^2", "kN/m^2", "MN/m^2", "GN/m^2"]
         pressao = self.parent.get_unit_press()
         self.combo_box_si_press= wx.ComboBox(self.box_si, id = wx.ID_ANY, style = wx.CB_READONLY,choices = si_values_press, value = pressao[0])
         self.box_si.widgets_add(self.combo_box_si_press, 1, False)
@@ -156,33 +170,66 @@ class ConfiguracoesChildFrame(wx.MDIChildFrame):
         self.box_variaveis_norma = StaticBox(self.window_main_panel, "Configurações de variáveis", orientation="grid")
         self.e_text = wx.StaticText(self.box_variaveis_norma, id=wx.ID_ANY, label="Módulo de elasticidade (Pa) : ")
         self.box_variaveis_norma.widgets_add(self.e_text, 0, False)
-        e = self.parent.get_e_modulo()
+        e = str(self.parent.get_e_modulo())
         self.input_e = TextBoxVrf(self.box_variaveis_norma, value=e, only_numeric=True)
         self.box_variaveis_norma.widgets_add(self.input_e, 1, False)
         self.g_text = wx.StaticText(self.box_variaveis_norma, id=wx.ID_ANY, label="Módulo de elasticidade transversal (Pa) : ")
         self.box_variaveis_norma.widgets_add(self.g_text, 0, False)
-        g = self.parent.get_g_modulo()
+        g = str(self.parent.get_g_modulo())
         self.input_g = TextBoxVrf(self.box_variaveis_norma, value=g, only_numeric=True)
         self.box_variaveis_norma.widgets_add(self.input_g, 1, False)
         self.y_um_text = wx.StaticText(self.box_variaveis_norma, id=wx.ID_ANY, label="γ1: ")
         self.box_variaveis_norma.widgets_add(self.y_um_text, 0, False)
-        y1 = self.parent.get_y_um()
+        y1 = str(self.parent.get_y_um())
         self.input_y_um = TextBoxVrf(self.box_variaveis_norma, value=y1, only_numeric=True)
         self.box_variaveis_norma.widgets_add(self.input_y_um, 1, False)
+        #box memoria de calculo
+        self.box_memoria = StaticBox(self.window_main_panel, "Configurações da memória de cálculo", orientation="grid")
+        self.utilizar_na_horizontal = wx.StaticText(self.box_memoria, id=wx.ID_ANY, label="Utilizar papel na horizontal : ")
+        self.box_memoria.widgets_add(self.utilizar_na_horizontal, 0, False)
+        self.checkbox_h = wx.CheckBox(self.box_memoria, label="")
+
+        if self.parent.get_orientacao():
+            self.checkbox_h.SetValue(True)
+        else:
+            self.checkbox_h.SetValue(False)
+
+        self.box_memoria.widgets_add(self.checkbox_h, 0, False)
+        self.utilizar_papel = wx.StaticText(self.box_memoria, id=wx.ID_ANY,
+                                                    label="Tipo de papel a utilizar : ")
+        self.box_memoria.widgets_add(self.utilizar_papel, 0, False)
+        tipo_de_papel = ["a4paper", "a5paper", "a3paper", "b5paper"]
+        papel = self.parent.get_papel()
+        self.combo_papel= wx.ComboBox(self.box_memoria, id = wx.ID_ANY, style = wx.CB_READONLY,choices = tipo_de_papel, value = papel)
+        self.box_memoria.widgets_add(self.combo_papel, 1, False)
+        self.abrir = wx.StaticText(self.box_memoria, id=wx.ID_ANY,
+                                                    label="Abrir o arquivo da memória após gerar: ")
+        self.box_memoria.widgets_add(self.abrir, 0, False)
+        self.checkbox_abrir_apos_gerar = wx.CheckBox(self.box_memoria, label="")
+        self.checkbox_abrir_apos_gerar.SetValue(True)
+        self.box_memoria.widgets_add(self.checkbox_abrir_apos_gerar, 0, True)
+
         # box variaveis
         self.box_aplicar = StaticBox(self.window_main_panel, "", orientation="horizontal")
         self.btn_reset = wx.Button(self.box_aplicar, label="Resetar os valores")
+        self.btn_reset.SetBitmapPosition(wx.LEFT)
+        self.btn_reset.SetBitmap(wx.Bitmap("icones/reset.png", wx.BITMAP_TYPE_PNG))
         self.box_aplicar.widgets_add(self.btn_reset, 1, True)
         self.btn_reset.Bind(wx.EVT_BUTTON, on_btn_reset)
         self.btn_apl = wx.Button(self.box_aplicar, label="Aplicar")
+        self.btn_apl.SetBitmapPosition(wx.LEFT)
+        self.btn_apl.SetBitmap(wx.Bitmap("icones/inject.png", wx.BITMAP_TYPE_PNG))
         self.box_aplicar.widgets_add(self.btn_apl, 1, True)
         self.btn_apl.Bind(wx.EVT_BUTTON, on_btn_apl)
         self.btn_save = wx.Button(self.box_aplicar, label="Salvar")
+        self.btn_save.SetBitmapPosition(wx.LEFT)
+        self.btn_save.SetBitmap(wx.Bitmap("icones/disquete.png", wx.BITMAP_TYPE_PNG))
         self.box_aplicar.widgets_add(self.btn_save, 1, True)
         self.btn_save.Bind(wx.EVT_BUTTON, on_btn_save)
         #adicionando ao sizer principal
         self.main_sizer.Add(self.box_si,  proportion = 0, flag = wx.ALL | wx.EXPAND, border = 5)
         self.main_sizer.Add(self.box_variaveis_norma,  proportion = 0, flag = wx.ALL | wx.EXPAND, border = 5)
+        self.main_sizer.Add(self.box_memoria,  proportion = 0, flag = wx.ALL | wx.EXPAND, border = 5)
         self.main_sizer.Add(self.box_aplicar,  proportion = 0, flag = wx.ALL | wx.EXPAND, border = 5)
         self.window_main_panel.SetSizer(self.main_sizer)
 

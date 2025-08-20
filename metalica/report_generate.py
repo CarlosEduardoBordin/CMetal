@@ -2,8 +2,8 @@ import wx
 import platform
 import uuid
 from datetime import datetime
-from pylatex import Document, Command
-from pylatex.utils import NoEscape
+from pylatex import Document, Command, Table,  Tabular
+from pylatex.utils import NoEscape, bold
 
 
 class ReportGenerator:

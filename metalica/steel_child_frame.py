@@ -1,5 +1,8 @@
+import os
+
 import wx
 import wx.adv
+import re
 from pint import UnitRegistry
 from metalica.edit_child_frame import EditChildFrame
 from widget_class import StaticBox , TextBoxVrf, SaveBox, StaticTextTune
@@ -20,13 +23,14 @@ class SteelChildFrame(wx.MDIChildFrame):
     def __init__(self, parent, frame_name):
         #parametros iniciais da janela
         super().__init__(parent, id=wx.ID_ANY, title = frame_name,
-                         pos=(0,0), size = (800,740), style = wx.DEFAULT_FRAME_STYLE)
+                         pos=(0,0), size = (800,775), style = wx.DEFAULT_FRAME_STYLE)
         self.perfil_list = []
         self.parent = self.GetParent() #atributo parente da janela
+        self.SetIcon(icon = wx.Icon("icones/if.png", wx.BITMAP_TYPE_PNG))  # Definindo o ícone para o MDIFrame
+
         # self.SetIcon(wx.Icon("icones/perfil.bmp"))
         #------------------------------------------------funcoes dos botoes
         self.data_steel_type = ReadExcelFile("steel.xlsx","tipo_de_aco")
-        self.data_steel_lmn = ReadExcelFile("steel.xlsx","laminado")
 
         self.cb = 1
         self.aef = -1
@@ -129,11 +133,22 @@ class SteelChildFrame(wx.MDIChildFrame):
             edit_child = EditChildFrame(self.parent,"Editor")
             edit_child.Show()
             # lista de valores ja tirados do excel e ja definidos nos rotulos
+        def on_select_tipo(event):
+            if self.select_type.GetValue() == "Soldado":
+                self.data_steel_lmn = ReadExcelFile("steel.xlsx", "soldado")
+            elif self.select_type.GetValue() == "Laminado":
+
+                self.data_steel_lmn = ReadExcelFile("steel.xlsx", "laminado")
+            perfil_type = self.data_steel_lmn.return_value_by_one_col("BITOLA mm x kg/mgraus")
+            self.select_steel_perfil.Clear()
+            self.select_steel_perfil.AppendItems(perfil_type)
+
         def on_select_perfil(event):
             text_values = label_and_object.keys()
             option_selected = self.select_steel_perfil.GetStringSelection()
             return_values_dimension = self.data_steel_lmn.get_name_and_return_col_value("BITOLA mm x kg/mgraus",f"{option_selected}",text_values)
             for name_col, value  in return_values_dimension.items():
+                value = round(value,2)
                 label = str(name_col) + " " + str(value)
                 if name_col in label_and_object.keys():
                     label = label_and_object[name_col]
@@ -264,8 +279,10 @@ class SteelChildFrame(wx.MDIChildFrame):
                 path = self.save_dialog.get_path()
                 self.save_dialog.Destroy()
                 print(f"{path}")
+                print(self.select_type.GetValue())
+                self.data = VerificationProcess(parent, *transformed_list_perfil_data, option_selected,self.select_type.GetValue(),frame_name, path)
 
-                self.data = VerificationProcess(parent,*transformed_list_perfil_data,frame_name, path)
+
                 resultado = self.data.calculate()
                 if resultado:
                     self.status_label.SetLabel("APROVADO!")
@@ -277,6 +294,11 @@ class SteelChildFrame(wx.MDIChildFrame):
                     # self.status_label.set_valueand_color("REPROVADO!",200, 20, 20)
                 self.box_status.Update()
                 self.box_status.Layout()
+                
+                if parent.get_open_file():
+                    caminho_arquivo = f"{path}.pdf"
+                    os.startfile(caminho_arquivo)
+
             except Exception as e:
                 wx.MessageBox(f"Erro : {e}", "Erro", wx.OK | wx.ICON_ERROR)
 
@@ -285,11 +307,15 @@ class SteelChildFrame(wx.MDIChildFrame):
             # try:
                 self.clear_perfil_list()
                 steel_perfil_list = self.data_steel_lmn.return_value_by_one_col("BITOLA mm x kg/mgraus")
+
+                print(steel_perfil_list)
                 aef = return_aef()
 
                 for perfil in steel_perfil_list:
                     a = get_info(perfil, aef)
                     print(f"////////////////////////////////////////// {perfil}")
+                    print(type((a[0])))
+
                     transformed_list_perfil_data = ((a[0]), ((a[1]) * ureg(parent.get_unit_lenght()[0])),
                                                     (a[2]) * ureg(parent.get_unit_lenght()[0]),
                                                     (a[3]) * ureg(parent.get_unit_lenght()[0]),
@@ -323,8 +349,11 @@ class SteelChildFrame(wx.MDIChildFrame):
                                                     (a[36]) * ureg(parent.get_unit_press()[0]),
                                                     (a[37]) * ureg(parent.get_unit_press()[0]), (a[38])
                                                     )
+                    if self.select_type.GetValue() == "Soldado":
+                        self.data = VerificationProcess(parent, *transformed_list_perfil_data, "","Soldado", frame_name, frame_name)
+                    elif self.select_type.GetValue() == "Laminado":
+                        self.data = VerificationProcess(parent, *transformed_list_perfil_data,"", "Laminado", frame_name, frame_name)
 
-                    self.data = VerificationProcess(parent, *transformed_list_perfil_data, None,None)
                     self.data.calculate_all()
 
                     resultado = [perfil, self.data.calculate_all()]
@@ -376,8 +405,12 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.box_perfil_data = StaticBox(self.box_perfil, "Dados do perfil perfil", orientation="grid")
         self.box_perfil_data.SetMaxSize((800, -1))
         self.box_perfil.widgets_add(self.box_perfil_data, 0, True)
-        perfil_type = self.data_steel_lmn.return_value_by_one_col("BITOLA mm x kg/mgraus")
-        self.select_steel_perfil = wx.ComboBox(self.box_perfil_selection, id = wx.ID_ANY, style = wx.CB_READONLY,choices = perfil_type) #VERIFICAR pq ele fica grande mesmo nao expandindo
+        tipo = ["Soldado", "Laminado"]
+        self.select_type = wx.ComboBox(self.box_perfil_selection, id = wx.ID_ANY, style = wx.CB_READONLY,choices = tipo) #VERIFICAR pq ele fica grande mesmo nao expandindo
+        self.select_type.Bind(wx.EVT_COMBOBOX, on_select_tipo)
+        # self.select_type.SetMaxSize(wx.Size(-1, 20))
+        self.box_perfil_selection.widgets_add(self.select_type, 0, "False")
+        self.select_steel_perfil = wx.ComboBox(self.box_perfil_selection, id = wx.ID_ANY, style = wx.CB_READONLY, choices=[]) #VERIFICAR pq ele fica grande mesmo nao expandindo
         self.select_steel_perfil.SetMaxSize(wx.Size(-1, 20))
         self.select_steel_perfil.Bind(wx.EVT_COMBOBOX, on_select_perfil)
         self.box_perfil_selection.widgets_add(self.select_steel_perfil, 0, "False")
@@ -441,18 +474,22 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.box_lengths = StaticBox(self.box_values_input, "Informações do elemento", orientation= "grid")
         self.box_values_input.widgets_add(self.box_lengths,0, False)
         self.text_lfx = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Lx (m) :")
+        self.text_lfx.SetToolTip("(Lx) comprimento destravado do elemento paralelo ao eixo X")
         self.box_lengths.widgets_add(self.text_lfx, 0, False)
         self.input_lfx = TextBoxVrf(self.box_lengths, value = "1", only_numeric=True)
         self.box_lengths.widgets_add(self.input_lfx, 1,False)
         self.text_lfy = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Ly (m) :")
+        self.text_lfy.SetToolTip("(Ly) comprimento destravado do elemento paralelo ao eixo Y")
         self.box_lengths.widgets_add(self.text_lfy, 0, False)
         self.input_lfy = TextBoxVrf(self.box_lengths, value = "1", only_numeric=True)
         self.box_lengths.widgets_add(self.input_lfy, 1,False)
         self.text_lz = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Lz (m) :")
+        self.text_lz.SetToolTip("(Lz) comprimento destravado do elemento associado a sua torção")
         self.box_lengths.widgets_add(self.text_lz, 0, False)
         self.input_lfz = TextBoxVrf(self.box_lengths,  value = "1", only_numeric=True)
         self.box_lengths.widgets_add(self.input_lfz, 1,False)
         self.text_lf = wx.StaticText(self.box_lengths,id = wx.ID_ANY, label = "Lf (m) :")
+        self.text_lf.SetToolTip("(Lf) ou (Lb) Distância entre as contenções de flambagem lateral com torção")
         self.box_lengths.widgets_add(self.text_lf, 0, False)
         self.input_lfb = TextBoxVrf(self.box_lengths,  value = "1", only_numeric=True)
         self.box_lengths.widgets_add(self.input_lfb, 1,False)
@@ -476,26 +513,32 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.box_load_solicitation = StaticBox(self.box_values_input, "Solicitações", orientation= "grid")
         self.box_values_input.widgets_add(self.box_load_solicitation, 0, False)
         self.text_fnt = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Normal tração (KN) :")
+        self.text_fnt.SetToolTip("Valor de cálculo referente a força de tração que o elemento está submetido")
         self.box_load_solicitation.widgets_add(self.text_fnt, 0, False)
         self.input_fnt = TextBoxVrf(self.box_load_solicitation, value = "1", only_numeric=True)
         self.box_load_solicitation.widgets_add(self.input_fnt, 1, False)
         self.text_fnc = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Normal compressão (KN) :")
+        self.text_fnc.SetToolTip("Valor de cálculo referente a força de compressão que o elemento está submetido (o valor será calculado em módulo!)")
         self.box_load_solicitation.widgets_add(self.text_fnc, 0, False)
         self.input_fnc = TextBoxVrf(self.box_load_solicitation, value = "1", only_numeric=True)
         self.box_load_solicitation.widgets_add(self.input_fnc, 1, False)
         self.text_fcx = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Cortante X (KN) :")
+        self.text_fcx.SetToolTip("Valor de cálculo referente a força cortante perpendicular ao eixo X do elemento")
         self.box_load_solicitation.widgets_add(self.text_fcx, 0, False)
         self.input_fcx = TextBoxVrf(self.box_load_solicitation, value = "1", only_numeric=True)
         self.box_load_solicitation.widgets_add(self.input_fcx, 1, False)
         self.text_fcy = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Cortante Y (KN) :")
+        self.text_fcy.SetToolTip("Valor de cálculo referente a força cortante perpendicular ao eixo Y do elemento")
         self.box_load_solicitation.widgets_add(self.text_fcy, 0,  False)
         self.input_fcy = TextBoxVrf(self.box_load_solicitation, value = "1",only_numeric=True)
         self.box_load_solicitation.widgets_add(self.input_fcy, 1, False)
         self.text_mx = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Momento X (Kn*m) :")
+        self.text_fcy.SetToolTip("Valor de cálculo referente a momento fletor em relação ao eixo X do elemento")
         self.box_load_solicitation.widgets_add(self.text_mx, 0, False)
         self.input_mx = TextBoxVrf(self.box_load_solicitation, value = "1",only_numeric=True)
         self.box_load_solicitation.widgets_add(self.input_mx, 1, False)
         self.text_my = wx.StaticText(self.box_load_solicitation, id=wx.ID_ANY, label="Momento Y (Kn*m) :")
+        self.text_fcy.SetToolTip("Valor de cálculo referente a momento fletor em relação ao eixo Y do elemento")
         self.box_load_solicitation.widgets_add(self.text_my, 0, False)
         self.input_my = TextBoxVrf(self.box_load_solicitation, value = "1",only_numeric=True)
         self.box_load_solicitation.widgets_add(self.input_my, 1, False)
@@ -515,6 +558,8 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.box_results = StaticBox(self.box_values_input, "Resultados", orientation= "vertical")
         self.box_values_input.widgets_add(self.box_results, 0, True)
         self.calculate =  wx.Button(self.box_results, label = "Calcular")
+        self.calculate.SetToolTip("Calcular para o elemento selecionado")
+
         self.box_results.widgets_add(self.calculate, 0, False)
         self.calculate.Bind(wx.EVT_BUTTON, on_calculate)
         self.box_status = StaticBox(self.box_results, "Situação:", orientation = "vertical")
@@ -523,6 +568,7 @@ class SteelChildFrame(wx.MDIChildFrame):
         self.box_todos = StaticBox(self.box_results, "Todos os perfis", orientation="vertical")
         self.box_results.widgets_add(self.box_todos, 0, True)
         self.calculate_all = wx.Button(self.box_todos, label="Calcular")
+        self.calculate_all.SetToolTip("Calcular para todos os elementos")
         self.box_todos.widgets_add(self.calculate_all, 0, False)
         self.calculate_all.Bind(wx.EVT_BUTTON, on_calculate_all)
 

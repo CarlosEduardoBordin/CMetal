@@ -19,9 +19,9 @@ class MDIFrame(wx.MDIParentFrame):
     # Declara Construtor
     def __init__(self):
         # Cria Formulario Pai
-        wx.MDIParentFrame.__init__(self, None, -1, "CMetal", size=(wx.GetDisplaySize()))
+        wx.MDIParentFrame.__init__(self, None, -1, "IFSteel", size=(wx.GetDisplaySize()))
         self.Maximize(True)
-        self.SetIcon(icon = wx.Icon("icones/concreframe.png", wx.BITMAP_TYPE_PNG))  # Definindo o ícone para o MDIFrame
+        self.SetIcon(icon = wx.Icon("icones/if.png", wx.BITMAP_TYPE_PNG))  # Definindo o ícone para o MDIFrame
         #unidades de medida pre-definidas
         self.data_si = ReadExcelFile("steel.xlsx","unidades")
 
@@ -55,6 +55,7 @@ class MDIFrame(wx.MDIParentFrame):
         self.y_um = self.data_si.get_name_and_return_col_value_str("Tipo", f"y1", ["Unidade"])
         self.papel = self.data_si.get_name_and_return_col_value_str("Tipo", f"papel", ["Unidade"])
         self.orientacao = self.data_si.get_name_and_return_col_value_str("Tipo", f"orientacao", ["Unidade"])
+        self.file =  self.data_si.get_name_and_return_col_value_str("Tipo", f"file", ["Unidade"])
 
         # Criar um item
         self.menu = wx.Menu() # Criar um item de menu
@@ -227,6 +228,12 @@ class MDIFrame(wx.MDIParentFrame):
 
     def get_orientacao(self):
         return self.orientacao
+
+    def set_open_file(self, unit):
+        self.file = unit
+
+    def get_open_file(self):
+        return self.file
 
 # Cria aplicacao Wx
 app = wx.App(False)
